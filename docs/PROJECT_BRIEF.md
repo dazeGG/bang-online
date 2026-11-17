@@ -2,7 +2,7 @@
 
 ## Outcome and scope
 
-A private online classic BANG! match for **4–7 friends**, from a ready lobby through deal, all base cards and characters, elimination and victory. The local implementation contains the complete 80-card physical deck (22 kinds), 16 characters, durable guest seats and recoverable pending decisions. Publication and browser evidence are tracked separately in [SETUP_STATUS.md](SETUP_STATUS.md); the public site remains on the previous lobby release until the complete-game deployment is verified.
+A private online classic BANG! match for **4–7 friends**, from a ready lobby through deal, all base cards and characters, elimination and victory. The implementation contains the complete 80-card physical deck (22 kinds), 16 characters, durable guest seats and recoverable pending decisions. The complete-game build is published at <https://bang.dazinho.ru>; exact deployed source, public browser evidence and remaining device/operational limits are recorded in [SETUP_STATUS.md](SETUP_STATUS.md).
 
 Dodge City and other expansions, 3/8-player modes, Redis, bots, public matchmaking, built-in voice/video, accounts, spectators, native clients and PWA installation are outside this release. Finishing or aborting leaves a terminal room; the next match uses a new room.
 

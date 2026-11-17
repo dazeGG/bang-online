@@ -2,11 +2,11 @@
 
 A private browser-based adaptation of classic BANG! for friends. The first-release target is **4–7 players** on desktop, phone, and tablet browsers.
 
-The local implementation supports a **complete classic match**: private ready lobby, authoritative role/character/card setup, all **80 cards (22 kinds) and 16 characters**, out-of-turn decisions, elimination and victory. PostgreSQL stores exact match snapshots and command receipts atomically; reconnect and restart retain unfinished decisions. The saloon interface displays only each player's authorized hand and role. See [room and game protocol](docs/LOBBY.md) and [rules coverage](docs/CLASSIC_RULES.md).
+The implementation supports a **complete classic match**: private ready lobby, authoritative role/character/card setup, all **80 cards (22 kinds) and 16 characters**, out-of-turn decisions, elimination and victory. PostgreSQL stores exact match snapshots and command receipts atomically; reconnect and restart retain unfinished decisions. The saloon interface displays only each player's authorized hand and role. See [room and game protocol](docs/LOBBY.md) and [rules coverage](docs/CLASSIC_RULES.md).
 
 Missing required players are awaited without timers or penalties. The fixed host can explicitly end an active match without a winner. After a finished or aborted match, create a new room. Dodge City, 3/8-player modes, bots, Redis and PWA installation remain outside this release.
 
-**Publication status:** the complete-game build has passed local automated, browser and independent review gates; the public site still runs the earlier lobby release pending deployment. Local verification is not evidence of a deployed gameplay release; see [verification status](docs/SETUP_STATUS.md).
+**Publication status:** the complete classic-game build is live at <https://bang.dazinho.ru>. Deployed source `276ebba` passed local automated/browser/review gates and GitHub CI; public HTTPS checks verified ready/start, a play/response, refresh/disconnect recovery and host abort. See [verification status](docs/SETUP_STATUS.md) for exact evidence and device limits.
 
 ## Requirements
 
@@ -55,7 +55,7 @@ Without PostgreSQL the server still starts and liveness works, but room endpoint
 | `npm start`          | Start the built API/server; build first.                                       |
 | `npm run preview`    | Preview the built web client locally; start the API separately.                |
 
-`start` and `preview` are local building blocks. The production Docker image serves the client, API, and Socket.IO from one process behind HTTPS. The currently deployed lobby is at <https://bang.dazinho.ru>; complete-game deployment is pending. See [deployment operations](docs/DEPLOYMENT.md).
+`start` and `preview` are local building blocks. The production Docker image serves the client, API, and Socket.IO from one process behind HTTPS. The complete classic-game deployment is at <https://bang.dazinho.ru>. See [deployment operations](docs/DEPLOYMENT.md).
 
 ## Configuration
 
@@ -105,4 +105,4 @@ docs/
   START_PROMPT.md  Handoff prompt for the next chat
 ```
 
-Start with [the project brief](docs/PROJECT_BRIEF.md) and follow [the project instructions](AGENTS.md). See [verification status](docs/SETUP_STATUS.md) for completed checks and remaining publication/device gaps.
+Start with [the project brief](docs/PROJECT_BRIEF.md) and follow [the project instructions](AGENTS.md). See [verification status](docs/SETUP_STATUS.md) for completed checks and remaining device/operational gaps.
