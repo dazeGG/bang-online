@@ -1,6 +1,6 @@
 # Production deployment
 
-The established deployment is <https://bang.dazinho.ru> on the shared VoiceRoom host (`daze@193.233.91.146`). The public site currently runs the earlier lobby image; the complete classic-game implementation is local and its publication is pending. See [SETUP_STATUS.md](SETUP_STATUS.md) for exact verified build receipts.
+The established deployment is <https://bang.dazinho.ru> on the shared VoiceRoom host (`daze@193.233.91.146`). The complete classic-game build is live: source `276ebba`, image `bang:20261117182607-276ebba`, database migrations 1–3. Subsequent receipt-only documentation commits do not change the deployed application source. See [SETUP_STATUS.md](SETUP_STATUS.md) for exact verified build receipts.
 
 ## Layout and limits
 
@@ -18,11 +18,19 @@ From the repository root in Git Bash (or another POSIX shell with Docker and SSH
 bash deploy/deploy.sh
 ```
 
-The script builds `linux/amd64` locally, transfers the image over SSH without a registry, uploads the deployment files, and waits for container health. The default host, directory, and domain are configured in the script; the Caddy site itself currently uses the fixed `bang.dazinho.ru` hostname. It retains the three newest Bang images for rollback. Migrations are append-only; an application rollback does not roll back database migrations.
+The script builds `linux/amd64` locally, transfers the image over SSH without a registry, uploads the deployment files, and waits for container health. The default host, directory, and domain are configured in the script; the Caddy site itself currently uses the fixed `bang.dazinho.ru` hostname. It retains the three lexically newest Bang image tags; the retained `recovery-schema3-276ebba` tag survives this pruning. Migrations are append-only; an application rollback does not roll back database migrations.
 
-The complete-game update applies migration 3 (`durable_classic_matches`), widening room lifecycle and adding match snapshots, restrictive participant references and command receipts. Existing rooms, six/ten-character invitations and hashed seat credentials are preserved. Migrations 1 and 2 remain unchanged.
+The complete-game update applied migration 3 (`durable_classic_matches`), widening room lifecycle and adding match snapshots, restrictive participant references and command receipts. Existing rooms, six/ten-character invitations and hashed seat credentials are preserved. Migrations 1 and 2 remain unchanged.
 
-**After migration 3, an old image that only knows migrations 1/2 cannot be used for rollback:** the server rejects unknown schema versions at startup. Retaining an old image is therefore insufficient. Recovery requires an image that understands migration 3 and the persisted match schema/ruleset/catalog, with compatible code fixes if necessary. Never downgrade the schema, remove participant references or restore a clean volume to bypass this check. Before publication, verify the upgrade and prepare a schema-3-compatible recovery build. Automated backups/restore drills remain separate unfinished operational work.
+**After migration 3, an old image that only knows migrations 1/2 cannot be used for rollback:** the server rejects unknown schema versions at startup. Retaining an old image is therefore insufficient. Recovery requires an image that understands migration 3 and the persisted match schema/ruleset/catalog, with compatible code fixes if necessary. Never downgrade the schema, remove participant references or restore a clean volume to bypass this check. The retained `bang:recovery-schema3-276ebba` build was tested against local schema 3 and shipped before rollout. After migration, an isolated temporary Compose container using that tag started healthy against the production schema and returned HTTP 200 with `database: connected`; the temporary container was then stopped and removed. Its filesystem layers match the deployed build. Automated backups/restore drills remain separate unfinished operational work.
+
+To select this verified compatible application build while preserving the existing database:
+
+```bash
+ssh daze@193.233.91.146 'cd ~/bang && BANG_IMAGE=bang:recovery-schema3-276ebba docker compose up -d --no-deps --wait bang-app'
+```
+
+Verify `/api/ready` afterwards. This is a manual application recovery procedure, not an automated rollback or a database restore. Review the retained compatible tag before each future update.
 
 Before updating, run `npm run check` with actual PostgreSQL and inspect migration-upgrade, command-atomicity and restart tests. Deploy only a verified source revision; record its commit/image and public readiness separately. Startup's migration command runs before the app and does not drop/recreate existing game data.
 
@@ -41,6 +49,8 @@ Stopping preserves rooms, seats, matches, pending decisions and receipts. While 
 
 The earlier lobby deployment was verified on 2026-11-17: HTTPS, database readiness, room creation, invitation join in a separate browser profile, readiness propagation, refresh restoration, and leaving both test seats. The public HTTP/Socket.IO smoke test also verified WebSocket upgrade and rejection of foreign origins and invalid seat tokens. Those checks do not prove gameplay deployment.
 
-After publishing the complete-game build, verify HTTPS `/api/ready` reports a connected, migrated database; then create a controlled 4-player room, ready/start, inspect private views, perform a play/response, refresh/reconnect, and verify the same match/seat/pending state. Separately verify host-confirmed abort with no winner or a normal terminal result. Record the exact source/image, migration versions and outcomes in [SETUP_STATUS.md](SETUP_STATUS.md). Do not inspect unrelated private games or remove retained seats to clean up an active/terminal test room.
+The complete-game deployment passed public HTTPS readiness and browser checks with two independent profiles and two test-only protocol peers: four ready seats, start, Bang from card details, pending-defense refresh/disconnect recovery without penalties, an explicit response, and host-confirmed abort with no winner retained after refresh. Public normal-victory completion was not claimed; a complete normal match was verified locally. The existing database container/volume and all 28 neighboring container names, IDs, images and states were unchanged. Combined Caddy configuration validation passed without reloading it. See [SETUP_STATUS.md](SETUP_STATUS.md) for exact receipts.
+
+For future updates, repeat readiness and a controlled game/response/reconnect/terminal smoke check. Do not inspect unrelated private games or remove retained seats to clean up an active/terminal test room.
 
 Real phone/tablet testing, request rate limiting, abandoned-room expiry, automated backups and restore verification, external monitoring, and automated application rollback remain open. This is a small private preview deployment.

@@ -1,6 +1,6 @@
 # Verification status
 
-## Complete classic implementation — 2026-11-17, local release verified; publication pending
+## Complete classic implementation — 2026-11-17, published and verified
 
 The local code now implements a full classic match for **4–7 players**, with all 80 physical cards/22 kinds, 16 characters, turn/effect/rescue/elimination/victory logic and authorized private projections. [CLASSIC_RULES.md](CLASSIC_RULES.md) maps the physical inventory and every card/character/FAQ case to actual named tests; Q01 is explicitly outside software enforcement.
 
@@ -14,7 +14,13 @@ Browser environment: Chromium 152 in Electron 44 on Windows. At 360 CSS pixels, 
 
 A separate ordinary four-seat ready/start browser scenario verified host abort. Guests had no abort control. The native confirmation initially focused «Закрыть»; cancelling preserved turn 1, the draw decision and the host's five-card hand. Confirming on reopening produced `aborted` revision 2 with no pending decision and no winner in both profiles. Guest refresh retained the terminal result without actions/abort controls. The final copy displayed the no-winner phrase once. Test-only peers were stopped gracefully; retained match participants were not deleted.
 
-**Local browser and automated release verification are complete within the stated two-browser/two-protocol-peer and desktop/emulated-viewport limits. Publication remains pending:** the public site still runs the earlier saloon/lobby image recorded below. No complete-game source/image or public play/reconnect receipt has been recorded yet. Compatible recovery-build preparation and deployment verification remain publication gates. Prior lobby screenshots alone do not prove gameplay acceptance.
+**Publication and deployment verification passed.** Source `276ebbab4cd41b3916915aa1704cd60209ef3d18` is public, and <https://bang.dazinho.ru> runs `bang:20261117182607-276ebba`. GitHub CI [44147515663](https://github.com/dazeGG/bang-online/actions/runs/44147515663) passed for that source. Later receipt-only documentation commits do not change the deployed application. The public bundle is `/assets/index-DyNS319h.js`. HTTPS `/api/ready` returned HTTP 200 with `database: connected` before and after public game verification; PostgreSQL records migrations 1, 2 and 3.
+
+The retained `bang:recovery-schema3-276ebba` image was built and tested against local schema 3, then transferred before rollout. After deployment it started healthy in an isolated temporary Compose container against the production schema and returned ready/connected; that temporary container was stopped and removed. Recovery and deployed images have identical filesystem layers. The existing database container and `bang_db-data` volume were unchanged; all 28 neighboring container names, IDs, images and states matched the preflight baseline. Combined Caddy configuration validation passed without a reload. App memory was about 35.5 MiB of 192 MiB and PostgreSQL about 31.15 MiB of 160 MiB at the check; these are snapshots, not load-test results. No live pre-upgrade invitation fixture was proven; legacy room/token/readiness migration behavior is covered by the real-PostgreSQL integration tests.
+
+Public browser verification used **two independent browser profiles and two test-only protocol peers** in a controlled four-player room created on the new build. All seats readied and the host started normally. The host drew and played Bang through the native card-details dialog, whose safe initial focus was «Закрыть». Guest refresh preserved the identical authorized hand, life and pending defense. Explicit guest disconnect made the host show indefinite waiting; return restored the same pending choice without penalty. The guest declined: life changed from four to three while the four-card hand stayed unchanged (revision 4). Host confirmation then produced `aborted` revision 5, no pending decision and no winner in both profiles; guest reload retained the terminal state without commands or an abort control. Test peers disconnected gracefully and retained participants were not deleted. This public smoke did not play a complete normal-victory match; that result was verified locally as described above.
+
+At a public 360 CSS-pixel viewport, client and scroll widths both measured 345px with no horizontal overflow. Chromium 152/Electron 44 on Windows showed no new console errors during the public navigation and game flow. Physical iOS/Android devices remain untested. These receipts describe a private preview deployment within the stated browser/protocol-peer limits.
 
 Migration 3 cannot be rolled back by selecting an image that only understands migrations 1/2. Preserve the database volume and recover using a schema-3-compatible image; do not downgrade/drop game data. Operational follow-ups remain real iOS/Android tests, backups/restore drills, rate limiting, abandoned-room expiry and external monitoring.
 
@@ -67,4 +73,4 @@ TypeScript is intentionally pinned to 6.0.3: the selected typescript-eslint rele
 
 The root `.env` contains only the development defaults copied from `.env.example` and is ignored by Git. Preserve local changes to it when continuing.
 
-Current continuation: finish the integrated complete-game verification/publication gates in the newest section above; do not restart a first-turn milestone.
+Current continuation: the complete classic build is published and verified as recorded above. Prioritize the explicitly remaining device and operational follow-ups; do not restart a first-turn milestone.
