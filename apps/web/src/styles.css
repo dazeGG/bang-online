@@ -1,0 +1,154 @@
+:root {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #29251e;
+  background: #f7f3eb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --muted: #675f52;
+  --line: #d9d0c1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 20rem;
+}
+
+a {
+  color: inherit;
+}
+
+a:focus-visible {
+  outline: 0.2rem solid #925323;
+  outline-offset: 0.3rem;
+}
+
+.shell {
+  width: min(100% - 2.5rem, 62rem);
+  min-height: 100dvh;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.masthead,
+.footer,
+.connection-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.masthead {
+  padding-block: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-decoration: none;
+  letter-spacing: -0.05em;
+}
+
+.brand span {
+  margin-inline-start: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+}
+
+.version,
+.eyebrow,
+.footer {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.intro {
+  padding-block: clamp(3rem, 1.5rem + 6vw, 7rem) 2.5rem;
+}
+
+.eyebrow {
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+h1 {
+  max-width: 15ch;
+  margin-block: 1.25rem;
+  font-size: clamp(2.5rem, 1.6rem + 3.5vw, 5rem);
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+}
+
+.lead {
+  max-width: 38rem;
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+
+.development-note {
+  max-width: 36rem;
+  margin-block-start: 1.5rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.connection {
+  max-width: 40rem;
+  padding: 1.5rem;
+  margin-block-end: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: #fffcf6;
+}
+
+.connection h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.connection p {
+  line-height: 1.6;
+}
+
+.connection-hint {
+  margin-block-end: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.status-mark {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #9b6b1e;
+}
+
+.status-mark--connected {
+  background: #326241;
+}
+
+.status-mark--disconnected {
+  background: #9c4338;
+}
+
+.footer {
+  padding-block: 1.25rem;
+  margin-block-start: auto;
+  border-top: 1px solid var(--line);
+}
