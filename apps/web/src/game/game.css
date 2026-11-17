@@ -1,0 +1,381 @@
+.game-table {
+  padding: clamp(1rem, 0.5rem + 2dvw, 2rem);
+  min-width: 0;
+}
+.game-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.game-heading h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 1.3rem + 2dvw, 3rem);
+  line-height: 1.2;
+}
+.eyebrow {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+}
+.game-table h2 {
+  font-size: clamp(1.25rem, 1rem + 1dvw, 1.8rem);
+  margin-block-end: 0.75rem;
+  letter-spacing: -0.02em;
+}
+.game-table p {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.game-table .notice,
+.game-notice {
+  margin-block: 1rem;
+}
+.game-table .notice .button {
+  margin-inline-start: 0.75rem;
+}
+.own-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+  margin-block: 1.25rem;
+  padding: 1rem;
+  border-block: 1px solid var(--line);
+}
+.own-identity strong {
+  font-family: var(--display);
+  font-size: 1.3rem;
+}
+.own-identity .hint {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+}
+.player-boards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.7rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.player-board {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid #a77c46;
+  border-radius: 0.6rem;
+  background: #f9eccc80;
+}
+.player-board--current {
+  border: 2px solid #813620;
+  padding: calc(0.85rem - 1px);
+  box-shadow: inset 0 0 0 2px #d6ae6c;
+}
+.player-board--out {
+  background: #d3b68c66;
+}
+.player-board-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.player-board h3 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.current-badge {
+  color: #6d2319;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.character-link,
+.equipment-list button {
+  min-height: 3rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: transparent;
+  color: #632d18;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  text-align: start;
+}
+.player-life {
+  margin: 0;
+  font-weight: 700;
+}
+.player-role {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+}
+.equipment-list {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.equipment-list button {
+  font-size: 0.85rem;
+}
+.table-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  padding: 1.5rem 0.5rem;
+  margin-block: 1rem;
+  border: 1px dashed #a67c49;
+  border-radius: 1rem;
+}
+.table-center > div {
+  display: grid;
+  gap: 0.5rem;
+}
+.table-center > p {
+  flex-basis: 100%;
+  text-align: center;
+  margin: 0;
+}
+.pile-label {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.draw-pile,
+.empty-pile {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  width: 7rem;
+  min-height: 9rem;
+  border: 3px double #ba8e55;
+  border-radius: 0.5rem;
+  font-family: var(--display);
+}
+.draw-pile {
+  background: #68321e url('/art/walnut.webp');
+  color: #f9e5be;
+  transform: rotate(-3deg);
+}
+.draw-pile small {
+  font:
+    400 0.85rem 'Golos Text',
+    sans-serif;
+  margin-top: 0.7rem;
+}
+.game-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.game-actions > .button {
+  flex: 1 1 12rem;
+}
+.decision-panel,
+.preparation-panel {
+  border: 1px solid #a67842;
+  padding: 1rem;
+  border-radius: 0.6rem;
+  margin-block: 1rem;
+  background: #fff2d980;
+}
+.preparation-panel {
+  border-style: dashed;
+}
+.decision-panel p,
+.preparation-panel p {
+  margin-block: 0.5rem 1rem;
+}
+.hand-section,
+.revealed-pool {
+  border-top: 1px solid var(--line);
+  padding-block: 1rem;
+  margin-top: 1rem;
+}
+.hand-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.65rem;
+}
+.playing-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 9rem;
+  padding: 0.6rem;
+  border: 2px solid #a46e36;
+  border-radius: 0.5rem;
+  background: #ffefd3;
+  color: #3d1b0c;
+  box-shadow: 0 2px 3px #502b1520;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.playing-card--blue {
+  border-color: #375f70;
+  background: #e5e4d2;
+}
+.playing-card--available {
+  box-shadow:
+    0 0 0 2px #8a4422,
+    0 3px 5px #502b1533;
+}
+.playing-card strong {
+  font-family: var(--display);
+  font-size: 1rem;
+}
+.card-corner {
+  align-self: start;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.card-corner--red {
+  color: #9b281c;
+}
+.card-bottom {
+  font-size: 0.7rem;
+}
+.table-center .playing-card {
+  width: 7rem;
+}
+.card-selection {
+  width: 100%;
+}
+.card-selection fieldset {
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  padding: 0.8rem;
+  margin: 0;
+  min-width: 0;
+}
+.card-selection legend {
+  font-weight: 700;
+}
+.selection-cards {
+  display: grid;
+  gap: 0.5rem;
+}
+.selection-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 3rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #b18a57;
+  border-radius: 0.35rem;
+  background: #f9e8c9;
+  cursor: pointer;
+}
+.selection-card--selected {
+  border: 2px solid #7c301f;
+  padding: calc(0.5rem - 1px) calc(0.7rem - 1px);
+}
+.selection-card input {
+  accent-color: #7c301f;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+}
+.selection-count {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.game-history {
+  margin-block: 1rem;
+  border-top: 1px solid var(--line);
+  padding-block: 0.5rem;
+}
+.game-history summary {
+  cursor: pointer;
+  min-height: 3rem;
+  padding-block: 0.8rem;
+  font-weight: 700;
+}
+.game-history ol {
+  padding-inline-start: 1.5rem;
+}
+.game-history li {
+  line-height: 1.5;
+  margin-block: 0.4rem;
+}
+.game-result {
+  padding-block: 1rem;
+}
+.game-footer {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.game-dialog {
+  max-width: min(36rem, calc(100% - 2rem));
+  width: 36rem;
+  max-height: calc(100dvh - 2rem);
+  padding: clamp(1rem, 0.5rem + 2dvw, 2rem);
+  border: 2px solid #8e6034;
+  border-radius: 0.75rem;
+  background: #f6e4c7 url('/art/parchment.webp');
+  color: #3d1b0c;
+  box-shadow: 0 1rem 4rem #13070588;
+}
+.game-dialog h2 {
+  font-size: clamp(1.4rem, 1rem + 2dvw, 2rem);
+}
+.game-dialog p {
+  line-height: 1.6;
+}
+.game-dialog:modal {
+  overscroll-behavior: contain;
+}
+.game-dialog::backdrop {
+  background: #1e0b08b8;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.dialog-close {
+  margin-top: 1rem;
+}
+.game-dialog .button {
+  font-size: 1rem;
+}
+@media (max-width: 40rem) {
+  .game-heading > .button {
+    width: 100%;
+  }
+  .player-boards {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .player-board {
+    padding: 0.65rem;
+  }
+  .player-board--current {
+    padding: calc(0.65rem - 1px);
+  }
+  .player-board h3,
+  .character-link {
+    font-size: 0.9rem;
+  }
+  .player-life {
+    font-size: 0.9rem;
+  }
+  .game-table .notice .button {
+    margin: 0.5rem 0 0;
+    width: 100%;
+  }
+  .game-actions > .button {
+    flex-basis: 100%;
+  }
+}
+@media (max-width: 23rem) {
+  .player-boards {
+    grid-template-columns: 1fr;
+  }
+}

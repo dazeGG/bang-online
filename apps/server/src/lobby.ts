@@ -14,6 +14,7 @@ import {
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Server, Socket } from 'socket.io';
 import type { LobbySnapshot, LobbyStore, SeatSession } from './lobby-store.js';
+import type { GameTransport } from './game.js';
 import {
   isPlainObject,
   parseDisplayName,
@@ -24,6 +25,7 @@ import {
 
 export interface SocketData {
   session?: SeatSession | undefined;
+  deliverySequence?: number;
 }
 
 type LobbyServer = Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>;
@@ -56,9 +58,10 @@ interface LobbyOptions {
   io: LobbyServer;
   store: LobbyStore | undefined;
   webOrigin: string;
+  game?: GameTransport;
 }
 
-export function registerLobby({ app, io, store, webOrigin }: LobbyOptions) {
+export function registerLobby({ app, io, store, webOrigin, game }: LobbyOptions) {
   const isConnected = (seatId: string) =>
     (io.sockets.adapter.rooms.get(seatChannel(seatId))?.size ?? 0) > 0;
 
@@ -78,7 +81,9 @@ export function registerLobby({ app, io, store, webOrigin }: LobbyOptions) {
         host: seat.seatId === snapshot.hostSeatId,
         connected: isConnected(seat.seatId),
       })),
-      canStart: canStartClassicMatch(snapshot.seats.map((seat) => seat.ready)),
+      canStart:
+        snapshot.status === 'lobby' &&
+        canStartClassicMatch(snapshot.seats.map((seat) => seat.ready)),
     };
   }
 
@@ -91,7 +96,11 @@ export function registerLobby({ app, io, store, webOrigin }: LobbyOptions) {
   async function publish(roomId: string) {
     try {
       const snapshot = await store?.getLobby(roomId);
-      if (snapshot !== undefined) io.to(roomChannel(roomId)).emit('lobby:state', toView(snapshot));
+      if (snapshot !== undefined) {
+        if (snapshot.status === 'lobby')
+          io.to(roomChannel(roomId)).emit('lobby:state', toView(snapshot));
+        else await game?.publish(roomId);
+      }
     } catch (error) {
       logFailure('publish', error);
     }
@@ -211,6 +220,7 @@ export function registerLobby({ app, io, store, webOrigin }: LobbyOptions) {
         if (session === undefined) return ack({ ok: false, error: 'invalid_session' });
 
         socket.data.session = session;
+        socket.data.deliverySequence = 0;
         await socket.join([roomChannel(session.roomId), seatChannel(session.seatId)]);
 
         // Read after joining: a concurrent kick either already removed the seat (seen here)
@@ -222,6 +232,13 @@ export function registerLobby({ app, io, store, webOrigin }: LobbyOptions) {
         ) {
           detach(socket);
           return ack({ ok: false, error: 'invalid_session' });
+        }
+        if (snapshot.status !== 'lobby') {
+          const result = await game?.syncForSocket(socket, session);
+          if (result === undefined || !result.ok) return ack({ ok: false, error: 'unavailable' });
+          ack({ ok: true, seatId: session.seatId, lobby: toView(snapshot), game: result.game });
+          await game?.publish(session.roomId);
+          return;
         }
         ack({ ok: true, seatId: session.seatId, lobby: toView(snapshot) });
         // Presence changed for the other seats.

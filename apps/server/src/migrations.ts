@@ -56,6 +56,48 @@ export const migrations: readonly Migration[] = [
         CHECK (code ~ '^([ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}|[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{10})$');
     `,
   },
+  {
+    version: 3,
+    name: 'durable_classic_matches',
+    sql: `
+      ALTER TABLE rooms DROP CONSTRAINT rooms_status_check;
+      ALTER TABLE rooms ADD CONSTRAINT rooms_status_check
+        CHECK (status IN ('lobby', 'active', 'finished', 'aborted'));
+      ALTER TABLE seats ADD CONSTRAINT seats_room_id_id_key UNIQUE (room_id, id);
+
+      CREATE TABLE matches (
+        id uuid PRIMARY KEY,
+        room_id uuid NOT NULL UNIQUE REFERENCES rooms(id) ON DELETE RESTRICT,
+        revision integer NOT NULL CHECK (revision > 0),
+        status text NOT NULL CHECK (status IN ('active', 'finished', 'aborted')),
+        state jsonb NOT NULL CHECK (jsonb_typeof(state) = 'object'),
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        UNIQUE (id, room_id)
+      );
+      CREATE TABLE match_participants (
+        match_id uuid NOT NULL,
+        room_id uuid NOT NULL,
+        seat_id uuid NOT NULL,
+        PRIMARY KEY (match_id, seat_id),
+        UNIQUE (room_id, seat_id),
+        FOREIGN KEY (match_id, room_id) REFERENCES matches(id, room_id) ON DELETE RESTRICT,
+        FOREIGN KEY (room_id, seat_id) REFERENCES seats(room_id, id) ON DELETE RESTRICT
+      );
+      CREATE TABLE game_command_receipts (
+        room_id uuid NOT NULL,
+        actor_seat_id uuid NOT NULL,
+        command_id text NOT NULL CHECK (char_length(command_id) BETWEEN 1 AND 128),
+        match_id uuid NOT NULL,
+        fingerprint text NOT NULL,
+        receipt jsonb NOT NULL CHECK (jsonb_typeof(receipt) = 'object'),
+        created_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (room_id, actor_seat_id, command_id),
+        FOREIGN KEY (match_id, room_id) REFERENCES matches(id, room_id) ON DELETE RESTRICT,
+        FOREIGN KEY (room_id, actor_seat_id) REFERENCES match_participants(room_id, seat_id) ON DELETE RESTRICT
+      );
+    `,
+  },
 ];
 
 const MIGRATION_LOCK_KEY = 'bang:schema-migrations';

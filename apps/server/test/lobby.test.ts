@@ -185,7 +185,7 @@ describe.skipIf(!postgresAvailable)('database migrations', () => {
         roomId,
       ]);
 
-      expect(await legacy.migrate()).toEqual([2]);
+      expect(await legacy.migrate()).toEqual([2, 3]);
       const { address } = await startServer(legacy);
       const { lobby } = await connectAs(address, { roomCode, seatId, seatToken });
       expect(lobby.seats).toEqual([

@@ -1,11 +1,11 @@
-import { CLASSIC_PLAYER_LIMITS } from '@bang/contracts';
+import { CLASSIC_PLAYER_LIMITS, PROTOCOL_VERSION } from '@bang/contracts';
 import { HomePage } from './HomePage.js';
 import { parseRoomPath, usePathname } from './navigation.js';
 import { RoomPage } from './RoomPage.js';
 import { useServerConnection } from './use-server-connection.js';
 
 export function App() {
-  const { status, socket } = useServerConnection();
+  const { status, socket, serverInfo } = useServerConnection();
   const pathname = usePathname();
   const roomCode = parseRoomPath(pathname);
   const players = `${CLASSIC_PLAYER_LIMITS.min}–${CLASSIC_PLAYER_LIMITS.max}`;
@@ -24,7 +24,15 @@ export function App() {
         )}
       </div>
 
-      {roomCode !== null ? (
+      {serverInfo !== null && serverInfo.protocolVersion !== PROTOCOL_VERSION ? (
+        <section className="panel">
+          <h1 className="page-title">Доступна новая версия</h1>
+          <p>Обновите страницу, чтобы продолжить партию.</p>
+          <button type="button" className="button" onClick={() => window.location.reload()}>
+            Обновить страницу
+          </button>
+        </section>
+      ) : roomCode !== null ? (
         <RoomPage key={roomCode} roomCode={roomCode} socket={socket} status={status} />
       ) : pathname === '/' ? (
         <HomePage players={players} />

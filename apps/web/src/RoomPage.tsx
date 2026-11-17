@@ -13,6 +13,8 @@ import {
   type StoredSeat,
 } from './seat-storage.js';
 import type { ConnectionState, GameSocket } from './use-server-connection.js';
+import { GameTable } from './game/GameTable.js';
+import { useGameSession } from './game/use-game-session.js';
 
 interface RoomPageProps {
   roomCode: string;
@@ -29,6 +31,10 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
   const [seat, setSeat] = useState<StoredSeat | null>(() => loadSeat(roomCode));
   const [lobby, setLobby] = useState<LobbyView | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const gameSession = useGameSession(roomCode, seat?.seatId, socket, status);
+  const { attachmentSucceeded } = gameSession;
+  const storageReady = gameSession.ready;
+  const [attachAttempt, setAttachAttempt] = useState(0);
 
   // Another tab of this browser may join or leave this room.
   useEffect(() => {
@@ -67,7 +73,8 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
   // Full authenticated resynchronization after every (re)connect or credential change.
   const seatToken = seat?.seatToken;
   useEffect(() => {
-    if (socket === null || status !== 'connected' || seatToken === undefined) return;
+    if (socket === null || status !== 'connected' || seatToken === undefined || !storageReady)
+      return;
     let cancelled = false;
     socket
       .timeout(8_000)
@@ -76,6 +83,7 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
         if (cancelled) return;
         if (result.ok) {
           setLobby(result.lobby);
+          attachmentSucceeded(result.game);
           setNotice(null);
         } else if (result.error === 'invalid_session' || result.error === 'invalid_request') {
           clearSeat(roomCode);
@@ -93,7 +101,7 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [socket, status, roomCode, seatToken]);
+  }, [socket, status, roomCode, seatToken, attachmentSucceeded, attachAttempt, storageReady]);
 
   if (seat === null) {
     return (
@@ -113,7 +121,55 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
     return (
       <section className="panel" aria-busy="true">
         <h1 className="page-title">Возвращаемся на ваше место…</h1>
-        {notice && <p className="form-error">{notice}</p>}
+        {(notice || gameSession.notice) && (
+          <p className="form-error" role="alert">
+            {notice ?? gameSession.notice}
+          </p>
+        )}
+        {notice && (
+          <button
+            type="button"
+            className="button"
+            onClick={() => setAttachAttempt((attempt) => attempt + 1)}
+          >
+            Повторить подключение
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  if (gameSession.game) {
+    return (
+      <GameTable
+        game={gameSession.game}
+        disabled={gameSession.blocked}
+        notice={gameSession.notice}
+        submitted={gameSession.submitted !== null}
+        sending={gameSession.sending}
+        onAction={gameSession.act}
+        onAbort={gameSession.abort}
+        onSync={() => void gameSession.sync()}
+        onRetry={() => void gameSession.retry()}
+      />
+    );
+  }
+  if (lobby.status !== 'lobby') {
+    return (
+      <section className="panel" aria-busy="true">
+        <h1 className="page-title">Возвращаемся в партию…</h1>
+        {(notice || gameSession.notice) && (
+          <p className="form-error" role="alert">
+            {notice ?? gameSession.notice}
+          </p>
+        )}
+        <button
+          type="button"
+          className="button"
+          onClick={() => setAttachAttempt((attempt) => attempt + 1)}
+        >
+          Обновить партию
+        </button>
       </section>
     );
   }
@@ -124,8 +180,10 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
       seatId={seat.seatId}
       socket={socket}
       online={status === 'connected'}
-      notice={notice}
+      notice={gameSession.notice ?? notice}
       onNotice={setNotice}
+      startDisabled={gameSession.blocked}
+      onStart={() => gameSession.start(lobby.revision)}
     />
   );
 }
@@ -232,7 +290,9 @@ function JoinPanel({
           </button>
         </form>
       ) : (
-        <p className="form-error">{errorMessages.room_full}</p>
+        <p className="form-error">
+          {errorMessages[preview.preview.status === 'lobby' ? 'room_full' : 'room_closed']}
+        </p>
       )}
     </section>
   );
@@ -245,6 +305,8 @@ function LobbyPanel({
   online,
   notice,
   onNotice,
+  startDisabled,
+  onStart,
 }: {
   lobby: LobbyView;
   seatId: string;
@@ -252,6 +314,8 @@ function LobbyPanel({
   online: boolean;
   notice: string | null;
   onNotice: (message: string | null) => void;
+  startDisabled: boolean;
+  onStart: () => void;
 }) {
   const [pending, setPending] = useState(false);
   const me = lobby.seats.find((seat) => seat.seatId === seatId);
@@ -319,7 +383,7 @@ function LobbyPanel({
               <button
                 type="button"
                 className="button button--kick"
-                disabled={!online || pending}
+                disabled={!online || pending || startDisabled}
                 aria-label={`Убрать игрока ${seat.name}`}
                 onClick={() => {
                   if (window.confirm(`Убрать игрока «${seat.name}» из комнаты?`)) {
@@ -340,11 +404,21 @@ function LobbyPanel({
       <InviteLink link={inviteLink} />
 
       <div className="lobby-actions">
+        {amHost && (
+          <button
+            type="button"
+            className="button button--primary"
+            disabled={!lobby.canStart || startDisabled || pending}
+            onClick={onStart}
+          >
+            Начать партию
+          </button>
+        )}
         <button
           type="button"
           className={`button ${me?.ready ? '' : 'button--primary'}`}
           aria-pressed={me?.ready ?? false}
-          disabled={!online || pending || me === undefined}
+          disabled={!online || pending || startDisabled || me === undefined}
           onClick={() =>
             void command((s) =>
               s.timeout(8_000).emitWithAck('lobby:set-ready', { ready: !me?.ready }),
@@ -356,7 +430,7 @@ function LobbyPanel({
         <button
           type="button"
           className="button button--quiet"
-          disabled={!online || pending}
+          disabled={!online || pending || startDisabled}
           onClick={() => {
             if (window.confirm('Покинуть комнату? Ваше место освободится.')) {
               void command((s) => s.timeout(8_000).emitWithAck('lobby:leave'));

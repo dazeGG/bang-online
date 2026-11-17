@@ -1,4 +1,16 @@
 import { CLASSIC_RULESET_ID } from '@bang/game-core';
+import type {
+  GameView,
+  RoomStatus,
+  GameStartRequest,
+  GameCommandRequest,
+  GameAbortRequest,
+  GameSyncRequest,
+  GameCommandResult,
+  GameSyncResult,
+} from './game.js';
+import { PROTOCOL_VERSION } from './game.js';
+export * from './game.js';
 
 export { CLASSIC_PLAYER_LIMITS, CLASSIC_RULESET_ID, canStartClassicMatch } from '@bang/game-core';
 
@@ -9,7 +21,7 @@ export interface HealthResponse {
 }
 
 export interface ServerInfo {
-  protocolVersion: 2;
+  protocolVersion: typeof PROTOCOL_VERSION;
   rulesetId: typeof CLASSIC_RULESET_ID;
   minPlayers: number;
   maxPlayers: number;
@@ -49,7 +61,7 @@ export interface LobbySeatView {
 export interface LobbyView {
   roomCode: string;
   rulesetId: typeof CLASSIC_RULESET_ID;
-  status: 'lobby';
+  status: RoomStatus;
   /** Monotonic room revision. Presence updates may repeat the same revision. */
   revision: number;
   minPlayers: number;
@@ -60,7 +72,7 @@ export interface LobbyView {
 
 export interface RoomPreview {
   roomCode: string;
-  status: 'lobby';
+  status: RoomStatus;
   seatCount: number;
   maxPlayers: number;
   joinable: boolean;
@@ -91,13 +103,19 @@ export interface LobbyAttachRequest {
 }
 
 export type LobbyResult =
-  { ok: true; seatId: string; lobby: LobbyView } | { ok: false; error: LobbyErrorCode };
+  | { ok: true; seatId: string; lobby: LobbyView; game?: GameView }
+  | { ok: false; error: LobbyErrorCode };
+
+export type RoomView =
+  | { status: 'lobby'; lobby: LobbyView }
+  | { status: 'active' | 'finished' | 'aborted'; game: GameView };
 
 export type LobbyCommandResult = { ok: true } | { ok: false; error: LobbyErrorCode };
 
 export type LobbyClosedReason = 'left' | 'kicked';
 
 export interface ServerToClientEvents {
+  'game:state': (game: GameView) => void;
   'server:info': (info: ServerInfo) => void;
   'lobby:state': (lobby: LobbyView) => void;
   /** The attached seat no longer exists; the stored seat token is now useless. */
@@ -105,6 +123,10 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  'game:start': (request: GameStartRequest, ack: (result: GameCommandResult) => void) => void;
+  'game:command': (request: GameCommandRequest, ack: (result: GameCommandResult) => void) => void;
+  'game:sync': (request: GameSyncRequest, ack: (result: GameSyncResult) => void) => void;
+  'game:abort': (request: GameAbortRequest, ack: (result: GameCommandResult) => void) => void;
   'client:ping': (ack: (result: { serverTime: string }) => void) => void;
   /** Authenticates a seat token and performs a full lobby resynchronization. */
   'lobby:attach': (request: LobbyAttachRequest, ack: (result: LobbyResult) => void) => void;

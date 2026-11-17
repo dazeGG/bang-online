@@ -103,7 +103,7 @@ describe('Socket.IO transport', () => {
     socket.connect();
 
     await expect(info).resolves.toEqual({
-      protocolVersion: 2,
+      protocolVersion: 3,
       rulesetId: CLASSIC_RULESET_ID,
       minPlayers: 4,
       maxPlayers: 7,

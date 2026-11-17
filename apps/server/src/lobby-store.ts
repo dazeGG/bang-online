@@ -4,6 +4,7 @@ import {
   type LobbyErrorCode,
   type RoomPreview,
   type SeatCredentials,
+  type RoomStatus,
 } from '@bang/contracts';
 import type { Pool, PoolClient } from 'pg';
 import { generateRoomCode, generateSeatToken, hashSeatToken } from './lobby-validation.js';
@@ -20,7 +21,7 @@ export interface SeatSession {
 export interface LobbySnapshot {
   roomId: string;
   roomCode: string;
-  status: 'lobby';
+  status: RoomStatus;
   revision: number;
   hostSeatId: string | null;
   seats: { seatId: string; seatIndex: number; name: string; ready: boolean }[];
@@ -46,7 +47,7 @@ const UNIQUE_VIOLATION = '23505';
 interface RoomRow {
   id: string;
   code: string;
-  status: 'lobby';
+  status: RoomStatus;
   revision: number;
   host_seat_id: string | null;
 }
@@ -199,7 +200,7 @@ export function createPostgresLobbyStore(pool: Pool): LobbyStore {
     },
 
     async previewRoom(roomCode) {
-      const result = await pool.query<{ status: 'lobby'; seat_count: number }>(
+      const result = await pool.query<{ status: RoomStatus; seat_count: number }>(
         `SELECT r.status, count(s.id)::int AS seat_count
          FROM rooms r LEFT JOIN seats s ON s.room_id = r.id
          WHERE r.code = $1 GROUP BY r.id`,
@@ -268,6 +269,7 @@ export function createPostgresLobbyStore(pool: Pool): LobbyStore {
       return inTransaction(pool, async (client) => {
         const room = await lockRoom(client, 'id', session.roomId);
         if (room === undefined) return { ok: false as const, error: 'invalid_session' as const };
+        if (room.status !== 'lobby') return { ok: false as const, error: 'room_closed' as const };
         const result = await client.query<{ ready: boolean }>(
           'SELECT ready FROM seats WHERE id = $1 AND room_id = $2',
           [session.seatId, session.roomId],
@@ -286,6 +288,7 @@ export function createPostgresLobbyStore(pool: Pool): LobbyStore {
       return inTransaction(pool, async (client) => {
         const room = await lockRoom(client, 'id', session.roomId);
         if (room === undefined) return { ok: false as const, error: 'invalid_session' as const };
+        if (room.status !== 'lobby') return { ok: false as const, error: 'room_closed' as const };
         const deleted = await client.query('DELETE FROM seats WHERE id = $1 AND room_id = $2', [
           session.seatId,
           session.roomId,
@@ -305,6 +308,7 @@ export function createPostgresLobbyStore(pool: Pool): LobbyStore {
       return inTransaction(pool, async (client) => {
         const room = await lockRoom(client, 'id', session.roomId);
         if (room === undefined) return { ok: false as const, error: 'invalid_session' as const };
+        if (room.status !== 'lobby') return { ok: false as const, error: 'room_closed' as const };
         const actor = await client.query('SELECT 1 FROM seats WHERE id = $1 AND room_id = $2', [
           session.seatId,
           session.roomId,

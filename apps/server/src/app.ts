@@ -1,6 +1,7 @@
 import {
   CLASSIC_PLAYER_LIMITS,
   CLASSIC_RULESET_ID,
+  PROTOCOL_VERSION,
   type ClientToServerEvents,
   type HealthResponse,
   type ServerInfo,
@@ -13,22 +14,33 @@ import { createDatabase, type Database } from './database.js';
 import { registerLobby, type SocketData } from './lobby.js';
 import { createPostgresLobbyStore, type LobbyStore } from './lobby-store.js';
 import { registerWebClient } from './web-client.js';
+import { createPostgresGameStore, type GameStore } from './game-store.js';
+import { registerGame } from './game.js';
+import * as classic from '@bang/game-core';
 
 interface AppDependencies {
   database?: Database;
   lobbyStore?: LobbyStore;
+  gameStore?: GameStore;
 }
 
 export function buildApp(config: ServerConfig, dependencies: AppDependencies = {}) {
   const app = Fastify({ logger: { level: config.logLevel } });
   let database = dependencies.database;
   let lobbyStore = dependencies.lobbyStore;
+  let gameStore = dependencies.gameStore;
   if (database === undefined && config.databaseUrl !== undefined) {
     const postgres = createDatabase(config.databaseUrl, () => {
       app.log.error('Unexpected PostgreSQL pool error.');
     });
     database = postgres;
     lobbyStore ??= createPostgresLobbyStore(postgres.pool);
+    gameStore ??= createPostgresGameStore(postgres.pool, classic);
+  }
+  if (database !== undefined && 'pool' in database) {
+    const postgres = database as import('./database.js').PostgresDatabase;
+    lobbyStore ??= createPostgresLobbyStore(postgres.pool);
+    gameStore ??= createPostgresGameStore(postgres.pool, classic);
   }
 
   const io = new Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>(
@@ -44,7 +56,7 @@ export function buildApp(config: ServerConfig, dependencies: AppDependencies = {
   );
 
   const serverInfo: ServerInfo = {
-    protocolVersion: 2,
+    protocolVersion: PROTOCOL_VERSION,
     rulesetId: CLASSIC_RULESET_ID,
     minPlayers: CLASSIC_PLAYER_LIMITS.min,
     maxPlayers: CLASSIC_PLAYER_LIMITS.max,
@@ -60,7 +72,8 @@ export function buildApp(config: ServerConfig, dependencies: AppDependencies = {
     });
   });
 
-  registerLobby({ app, io, store: lobbyStore, webOrigin: config.webOrigin });
+  const game = registerGame({ app, io, store: gameStore });
+  registerLobby({ app, io, store: lobbyStore, webOrigin: config.webOrigin, game });
 
   app.get('/api/health', () => {
     return {
