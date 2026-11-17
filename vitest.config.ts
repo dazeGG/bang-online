@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   return {
     test: {
       environment: 'node',
-      include: ['packages/*/test/**/*.test.ts', 'apps/server/test/**/*.test.ts'],
+      include: ['packages/*/test/**/*.test.ts', 'apps/*/test/**/*.test.ts'],
       env,
       restoreMocks: true,
       testTimeout: 10_000,

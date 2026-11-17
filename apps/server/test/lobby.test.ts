@@ -7,11 +7,13 @@ import type {
   SeatCredentials,
   ServerToClientEvents,
 } from '@bang/contracts';
+import { CLASSIC_RULESET_ID } from '@bang/contracts';
 import { io as createClient, type Socket } from 'socket.io-client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
 import { createPostgresLobbyStore } from '../src/lobby-store.js';
+import * as lobbyValidation from '../src/lobby-validation.js';
 import { migrations } from '../src/migrations.js';
 import { createTestSchema, postgresAvailable, type TestSchema } from './postgres.js';
 
@@ -24,8 +26,8 @@ let schema: TestSchema;
 const apps: ReturnType<typeof buildApp>[] = [];
 const sockets: ClientSocket[] = [];
 
-async function startServer() {
-  const database = schema.open();
+async function startServer(testSchema = schema) {
+  const database = testSchema.open();
   const app = buildApp(config, {
     database,
     lobbyStore: createPostgresLobbyStore(database.pool),
@@ -146,6 +148,56 @@ describe.skipIf(!postgresAvailable)('database migrations', () => {
       await fresh.dispose();
     }
   });
+
+  it('upgrades existing 10-character rooms without losing seats or readiness', async () => {
+    const legacy = await createTestSchema();
+    try {
+      const database = legacy.open();
+      const initial = migrations[0];
+      if (initial === undefined) throw new Error('Missing initial migration.');
+      await database.pool.query(initial.sql);
+      await database.pool.query(`
+        CREATE TABLE schema_migrations (
+          version integer PRIMARY KEY,
+          name text NOT NULL,
+          applied_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+      await database.pool.query('INSERT INTO schema_migrations (version, name) VALUES ($1, $2)', [
+        initial.version,
+        initial.name,
+      ]);
+      const roomCode = 'ABCDEFGHJK';
+      const seatToken = lobbyValidation.generateSeatToken();
+      const room = await database.pool.query<{ id: string }>(
+        'INSERT INTO rooms (code, ruleset_id) VALUES ($1, $2) RETURNING id',
+        [roomCode, CLASSIC_RULESET_ID],
+      );
+      const roomId = room.rows[0]!.id;
+      const seat = await database.pool.query<{ id: string }>(
+        `INSERT INTO seats (room_id, seat_index, display_name, token_hash, ready)
+         VALUES ($1, 0, 'Existing host', $2, true) RETURNING id`,
+        [roomId, lobbyValidation.hashSeatToken(seatToken)],
+      );
+      const seatId = seat.rows[0]!.id;
+      await database.pool.query('UPDATE rooms SET host_seat_id = $1 WHERE id = $2', [
+        seatId,
+        roomId,
+      ]);
+
+      expect(await legacy.migrate()).toEqual([2]);
+      const { address } = await startServer(legacy);
+      const { lobby } = await connectAs(address, { roomCode, seatId, seatToken });
+      expect(lobby.seats).toEqual([
+        expect.objectContaining({ seatId, name: 'Existing host', ready: true, host: true }),
+      ]);
+      expect((await joinRoom(address, roomCode, 'New guest')).status).toBe(201);
+      expect((await createRoom(address, 'New host')).body.roomCode).toHaveLength(6);
+    } finally {
+      await Promise.all(apps.splice(0).map((app) => app.close()));
+      await legacy.dispose();
+    }
+  });
 });
 
 describe.skipIf(!postgresAvailable)('private lobby over HTTP', () => {
@@ -155,7 +207,7 @@ describe.skipIf(!postgresAvailable)('private lobby over HTTP', () => {
 
     expect(created.status).toBe(201);
     expect(created.response.headers.get('cache-control')).toBe('no-store');
-    expect(created.body.roomCode).toMatch(/^[A-Z2-9]{10}$/);
+    expect(created.body.roomCode).toMatch(/^[A-Z2-9]{6}$/);
     expect(created.body.seatToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
 
     const preview = await fetch(`${address}/api/rooms/${created.body.roomCode.toLowerCase()}`);
@@ -170,6 +222,23 @@ describe.skipIf(!postgresAvailable)('private lobby over HTTP', () => {
     const raw = JSON.stringify(previewBody);
     expect(raw).not.toContain(created.body.seatToken);
     expect(raw).not.toContain('Шериф');
+  });
+
+  it('retries a generated code collision without changing the existing room', async () => {
+    const { address } = await startServer();
+    const { body: existing } = await createRoom(address, 'Original host');
+    const availableCode = existing.roomCode === 'K7M4RW' ? 'M4RWK7' : 'K7M4RW';
+    const generator = vi.spyOn(lobbyValidation, 'generateRoomCode');
+    generator.mockReturnValueOnce(existing.roomCode).mockReturnValueOnce(availableCode);
+
+    const created = await createRoom(address, 'Second host');
+    expect(created.status).toBe(201);
+    expect(created.body.roomCode).toBe(availableCode);
+    expect(generator).toHaveBeenCalledTimes(2);
+    const { lobby } = await connectAs(address, existing);
+    expect(lobby.seats).toEqual([
+      expect.objectContaining({ seatId: existing.seatId, name: 'Original host', host: true }),
+    ]);
   });
 
   it('validates names, room codes and origin', async () => {

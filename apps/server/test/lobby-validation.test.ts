@@ -1,4 +1,4 @@
-import { ROOM_CODE_PATTERN } from '@bang/contracts';
+import { ROOM_CODE_LENGTH, ROOM_CODE_PATTERN } from '@bang/contracts';
 import { describe, expect, it } from 'vitest';
 import {
   generateRoomCode,
@@ -32,17 +32,34 @@ describe('room codes and seat credentials', () => {
   it('generates readable room codes that the parser accepts', () => {
     for (let index = 0; index < 200; index += 1) {
       const code = generateRoomCode();
+      expect(code).toHaveLength(6);
+      expect(code).toHaveLength(ROOM_CODE_LENGTH);
       expect(code).toMatch(ROOM_CODE_PATTERN);
       expect(parseRoomCode(code.toLowerCase())).toBe(code);
     }
   });
 
-  it.each(['', 'ABCDEFGHJ', 'ABCDEFGHJKM', 'ABCDEFGHJ0', 'ABCDEFGHJI', 'ABCDEFGHJL', 7])(
-    'rejects room code %j',
-    (value) => {
-      expect(parseRoomCode(value)).toBeUndefined();
-    },
-  );
+  it('accepts both new and legacy invitations, normalized to uppercase', () => {
+    expect(parseRoomCode(' k7m4rw ')).toBe('K7M4RW');
+    expect(parseRoomCode(' abcdefghjk ')).toBe('ABCDEFGHJK');
+  });
+
+  it.each([
+    '',
+    'ABCDE',
+    'ABCDEFG',
+    'ABCDEFGHJ',
+    'ABCDEFGHJKM',
+    'ABCDE0',
+    'ABCDEI',
+    'ABCDEL',
+    'ABCDEFGHJ0',
+    'ABCDEFGHJI',
+    'ABCDEFGHJL',
+    7,
+  ])('rejects room code %j', (value) => {
+    expect(parseRoomCode(value)).toBeUndefined();
+  });
 
   it('generates unique 256-bit seat tokens and stores only a 32-byte digest', () => {
     const tokens = new Set(Array.from({ length: 100 }, generateSeatToken));

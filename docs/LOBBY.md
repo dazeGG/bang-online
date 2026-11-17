@@ -4,13 +4,13 @@ This document describes the implemented private-lobby milestone: rooms, invitati
 
 ## Model
 
-| Concept    | Meaning                                                                                                                                                                      |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Room       | A private lobby identified by a 10-character **room code** (31-character readable alphabet, about 49 bits). The code is in the invitation link and is _not_ a credential.    |
-| Seat       | One of at most seven places in a room, with a display name, a seat index (0–6), and a ready flag. Seat ids are public UUIDs, used for presence and host actions.             |
-| Seat token | A 256-bit random secret returned **once**, when the seat is created. It is the only proof of seat ownership. PostgreSQL stores only its SHA-256 digest (`seats.token_hash`). |
-| Host       | The room creator. When the host leaves, the role moves to the lowest occupied seat; the first guest to join an empty room becomes host.                                      |
-| Revision   | `rooms.revision` increases with every accepted lobby mutation. Clients ignore views older than the one they hold. Presence-only updates may repeat a revision.               |
+| Concept    | Meaning                                                                                                                                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Room       | A private lobby identified by a six-character **room code** (31-character readable alphabet, about 30 bits), in a full `/r/<CODE>` invitation URL. Legacy ten-character codes and `/room/<CODE>` links remain valid. The code is _not_ a credential. |
+| Seat       | One of at most seven places in a room, with a display name, a seat index (0–6), and a ready flag. Seat ids are public UUIDs, used for presence and host actions.                                                                                     |
+| Seat token | A 256-bit random secret returned **once**, when the seat is created. It is the only proof of seat ownership. PostgreSQL stores only its SHA-256 digest (`seats.token_hash`).                                                                         |
+| Host       | The room creator. When the host leaves, the role moves to the lowest occupied seat; the first guest to join an empty room becomes host.                                                                                                              |
+| Revision   | `rooms.revision` increases with every accepted lobby mutation. Clients ignore views older than the one they hold. Presence-only updates may repeat a revision.                                                                                       |
 
 A waiting room may hold 1–7 seats. `canStart` is true only with 4–7 seats where every seat is ready (`canStartClassicMatch` in `packages/game-core`). Starting the match is the next milestone.
 
@@ -40,6 +40,7 @@ Mutating HTTP requests with a foreign `Origin` header are rejected (`403`), and 
 - **Full room:** the eighth join gets `room_full`; concurrent joins are serialized by a `SELECT … FOR UPDATE` lock on the room row, so the limit and unique seat indexes hold under races (tested with 10 concurrent joins).
 - **Presence:** a seat is `connected` while at least one socket is attached to it. Presence lives in process memory (single server process), not in PostgreSQL.
 - **Secrets:** seat tokens appear only in the create/join response and the owner's `lobby:attach` request. They are never broadcast, logged, put in URLs, or stored in plain text.
+- **Short invitations:** new rooms use six characters. Migration 2 widens the existing database constraint to accept exactly six or ten characters without changing old rooms, tokens, or readiness. A random-code collision retries generation under the existing unique constraint; it never reuses another room. Public invitation codes grant the ability to request a free seat, not ownership of an occupied seat.
 
 ## Moving a seat to another device (future, not implemented)
 

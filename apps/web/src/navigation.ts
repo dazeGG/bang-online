@@ -1,12 +1,25 @@
 import { useEffect, useState } from 'react';
 import { ROOM_CODE_PATTERN } from '@bang/contracts';
 
-export const roomPath = (roomCode: string) => `/room/${roomCode}`;
+export const roomPath = (roomCode: string) => `/r/${roomCode}`;
 
 export function parseRoomPath(pathname: string): string | null {
-  const match = /^\/room\/([^/]+)\/?$/.exec(pathname);
+  const match = /^\/(?:r|room)\/([^/]+)\/?$/.exec(pathname);
   const code = match?.[1]?.toUpperCase();
   return code !== undefined && ROOM_CODE_PATTERN.test(code) ? code : null;
+}
+
+/** Accept a bare code or an invitation, including legacy /room/ links. */
+export function parseInvitation(value: string): string | null {
+  const trimmed = value.trim();
+  if (ROOM_CODE_PATTERN.test(trimmed.toUpperCase())) return trimmed.toUpperCase();
+  try {
+    const url = new URL(trimmed, 'https://bang.invalid');
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    return parseRoomPath(url.pathname);
+  } catch {
+    return null;
+  }
 }
 
 export function navigate(path: string) {

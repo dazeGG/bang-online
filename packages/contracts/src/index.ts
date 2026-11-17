@@ -17,8 +17,10 @@ export interface ServerInfo {
 
 /** Public invitation code alphabet: no 0/O, 1/I/L to keep codes readable aloud. */
 export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-export const ROOM_CODE_LENGTH = 10;
-export const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{10}$/;
+export const ROOM_CODE_LENGTH = 6;
+/** Existing 10-character invitations stay valid; only new rooms use the shorter format. */
+export const ROOM_CODE_PATTERN =
+  /^(?:[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}|[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{10})$/;
 export const DISPLAY_NAME_MAX_LENGTH = 24;
 
 export type LobbyErrorCode =

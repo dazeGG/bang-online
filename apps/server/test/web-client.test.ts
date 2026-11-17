@@ -24,7 +24,7 @@ afterAll(async () => {
 });
 
 describe('built web client', () => {
-  it.each(['/', '/room/ABCDEFGHJK', '/room/ABCDEFGHJK?x=1'])(
+  it.each(['/', '/r/K7M4RW', '/r/ABCDEFGHJK', '/room/ABCDEFGHJK', '/room/ABCDEFGHJK?x=1'])(
     'serves index.html for %s',
     async (url) => {
       const response = await app.inject({ method: 'GET', url });

@@ -1,0 +1,10 @@
+Asset: saloon-hero.webp
+Created: 2026-11-17
+Method: built-in image_gen, reference-guided generation.
+Reference: approved refined saloon design mockup (exec-772ca0b8-9854-4c57-8aa8-07c9ab5a0acf.png).
+Original generation: 1810 x 869 PNG, 2675700 bytes, retained in Codex generated_images.
+Delivery: WebP quality 88 via local FFmpeg; same dimensions, no crop or composition edits; 336328 bytes.
+Intended consumer: home-page hero, approximately 1000 x 480; use the open left area for real HTML headings.
+
+Generation prompt:
+Use case: illustration-story. Asset type: production website hero background, a single isolated raster artwork. Reference image: approved BANG! saloon website mockup. Recreate ONLY the illustrated sunset saloon vignette from the LEFT screen's hero, with NO website frame, NO headings, NO logo, NO input controls or buttons, NO wood border. Canvas 1536 x 736 landscape (roughly 2.09:1), sized to be used in a 1000 x 480 web hero. Full bleed illustration on an aged cream parchment #f4deb3 base. Composition is critical: leave the LEFT 47% mostly warm blank cream paper with fine subtle grain so real HTML heading and subtitle can overlay it; no busy dark objects behind the text area. The RIGHT half features the same lovely old frontier saloon building and porch at sunset from the reference, warm lit windows, amber-orange sky, dusty desert path, distant mesas. Saloon occupies right edge and upper-right, not centered. Lower-left edge contains just a small original cactus and rustic fence, kept near bottom margin. Illustration style matches reference faithfully: detailed hand-painted engraving/watercolor Western board-game illustration, rich burnt sienna, oxblood wood, golden sunset, fine ink texture. Illustration should fade naturally into light aged parchment toward left and lower edges, seamless with a cream paper website base. The only optional text in the artwork is the realistic building sign 'SALOON'; no other text, no branding, no people. No UI mockup, no collage, no panel, no caption, no watermark. Generate the isolated usable artwork, not a screenshot.

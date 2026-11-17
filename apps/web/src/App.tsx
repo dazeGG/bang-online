@@ -4,12 +4,6 @@ import { parseRoomPath, usePathname } from './navigation.js';
 import { RoomPage } from './RoomPage.js';
 import { useServerConnection } from './use-server-connection.js';
 
-const statusLabels = {
-  connecting: 'Подключаемся к серверу…',
-  connected: 'На связи',
-  disconnected: 'Нет связи с сервером. Повторяем подключение…',
-};
-
 export function App() {
   const { status, socket } = useServerConnection();
   const pathname = usePathname();
@@ -17,16 +11,18 @@ export function App() {
   const players = `${CLASSIC_PLAYER_LIMITS.min}–${CLASSIC_PLAYER_LIMITS.max}`;
 
   return (
-    <main className="shell">
+    <main className={`shell${roomCode !== null ? ' shell--room' : ''}`}>
       <header className="masthead">
         <a className="brand" href="/" aria-label="Bang! — главная">
-          Bang!
+          BANG!
         </a>
-        <span className="connection-pill" role="status" aria-live="polite">
-          <span className={`status-mark status-mark--${status}`} aria-hidden="true" />
-          {statusLabels[status]}
-        </span>
       </header>
+
+      <div role="status" aria-live="polite">
+        {status === 'disconnected' && (
+          <p className="connection-notice">Связь прервалась. Переподключаемся…</p>
+        )}
+      </div>
 
       {roomCode !== null ? (
         <RoomPage key={roomCode} roomCode={roomCode} socket={socket} status={status} />
@@ -40,11 +36,6 @@ export function App() {
           </p>
         </section>
       )}
-
-      <footer className="footer">
-        <span>Классика · {players} игроков</span>
-        <span>Для своих</span>
-      </footer>
     </main>
   );
 }

@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 import type { LobbyErrorCode, LobbyResult, LobbyView, RoomPreview } from '@bang/contracts';
 import { errorMessages, getRoomPreview, joinRoom } from './api.js';
 import { NameField } from './NameField.js';
+import { roomPath } from './navigation.js';
 import {
   clearSeat,
   isSeatStorageKey,
@@ -193,27 +194,33 @@ function JoinPanel({
     );
   }
 
-  const { seatCount, maxPlayers, joinable } = preview.preview;
+  const { joinable } = preview.preview;
   return (
     <section className="panel join-panel" aria-labelledby="join-title">
-      <p className="eyebrow">Приглашение · комната {roomCode}</p>
       <h1 id="join-title" className="page-title">
         Займите место за столом
       </h1>
+      <p className="room-code">Комната {roomCode}</p>
       {notice && (
         <p className="notice" role="status">
           {notice}
         </p>
       )}
-      <p className="muted">
-        За столом {seatCount} из {maxPlayers}.
-      </p>
       {joinable ? (
-        <form className="form" aria-labelledby="join-title" onSubmit={handleJoin}>
+        <form
+          className="form"
+          aria-labelledby="join-title"
+          onSubmit={handleJoin}
+          method="post"
+          action={`/api/rooms/${roomCode}/seats`}
+        >
           <NameField
             id="join-name"
             value={name}
-            onChange={setName}
+            onChange={(next) => {
+              setName(next);
+              setError(null);
+            }}
             errorId="join-error"
             invalid={error !== null}
           />
@@ -249,9 +256,7 @@ function LobbyPanel({
   const [pending, setPending] = useState(false);
   const me = lobby.seats.find((seat) => seat.seatId === seatId);
   const amHost = me?.host === true;
-  const inviteLink = `${window.location.origin}/room/${lobby.roomCode}`;
-  const readyCount = lobby.seats.filter((seat) => seat.ready).length;
-  const missing = Math.max(0, lobby.minPlayers - lobby.seats.length);
+  const inviteLink = `${window.location.origin}${roomPath(lobby.roomCode)}`;
 
   async function command(
     run: (socket: GameSocket) => Promise<{ ok: true } | { ok: false; error: LobbyErrorCode }>,
@@ -268,27 +273,14 @@ function LobbyPanel({
     }
   }
 
-  const summary = lobby.canStart
-    ? 'Все готовы. Запуск партии появится на следующем этапе разработки.'
-    : missing > 0
-      ? `Ждём игроков: нужно ещё ${missing} (классика — ${lobby.minPlayers}–${lobby.maxPlayers}).`
-      : `Готовы ${readyCount} из ${lobby.seats.length}. Партия начнётся, когда готовы все.`;
-
   return (
     <section className="lobby" aria-labelledby="lobby-title">
       <div className="lobby-head">
-        <div>
-          <p className="eyebrow">Комната {lobby.roomCode}</p>
-          <h1 id="lobby-title" className="page-title">
-            Салун ждёт игроков
-          </h1>
-        </div>
-        <InviteLink link={inviteLink} />
+        <h1 id="lobby-title" className="page-title">
+          Салун ждёт игроков
+        </h1>
+        <p className="room-code">Комната {lobby.roomCode}</p>
       </div>
-
-      <p className="lobby-summary" role="status">
-        {summary}
-      </p>
       {notice && (
         <p className="form-error" role="alert">
           {notice}
@@ -297,24 +289,36 @@ function LobbyPanel({
 
       <ol className="seats" aria-label={`Игроки: ${lobby.seats.length} из ${lobby.maxPlayers}`}>
         {lobby.seats.map((seat) => (
-          <li key={seat.seatId} className={`seat${seat.seatId === seatId ? ' seat--me' : ''}`}>
-            <span
-              className={`presence presence--${seat.connected ? 'on' : 'off'}`}
-              aria-hidden="true"
-            />
+          <li
+            key={seat.seatId}
+            className={`seat${seat.seatId === seatId ? ' seat--me' : ''}${amHost && seat.seatId !== seatId ? ' seat--removable' : ''}`}
+          >
+            <span className="seat-initial" aria-hidden="true">
+              {Array.from(seat.name)[0]?.toLocaleUpperCase('ru')}
+            </span>
             <span className="seat-name">
-              {seat.name}
-              {seat.seatId === seatId && <span className="tag">вы</span>}
-              {seat.host && <span className="tag">хозяин</span>}
+              <span className="seat-display-name">{seat.name}</span>
+              {(seat.seatId === seatId || seat.host || !seat.connected) && (
+                <span className="seat-meta">
+                  {[
+                    seat.seatId === seatId ? 'вы' : null,
+                    seat.host ? 'хозяин' : null,
+                    !seat.connected ? 'не в сети' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              )}
               <span className="visually-hidden">{seat.connected ? ', в сети' : ', не в сети'}</span>
             </span>
             <span className={`ready ready--${seat.ready ? 'yes' : 'no'}`}>
-              {seat.ready ? '✔ Готов' : 'Не готов'}
+              {seat.ready && <img src="/icons/check.svg" alt="" width="20" height="20" />}
+              {seat.ready ? 'Готов' : 'Не готов'}
             </span>
             {amHost && seat.seatId !== seatId && (
               <button
                 type="button"
-                className="button button--small"
+                className="button button--kick"
                 disabled={!online || pending}
                 aria-label={`Убрать игрока ${seat.name}`}
                 onClick={() => {
@@ -325,17 +329,15 @@ function LobbyPanel({
                   }
                 }}
               >
-                Убрать
+                <img src="/icons/x.svg" alt="" width="20" height="20" />
+                <span className="kick-label">Убрать</span>
               </button>
             )}
           </li>
         ))}
-        {Array.from({ length: lobby.maxPlayers - lobby.seats.length }, (_, index) => (
-          <li key={`empty-${index}`} className="seat seat--empty" aria-hidden="true">
-            Свободное место
-          </li>
-        ))}
       </ol>
+
+      <InviteLink link={inviteLink} />
 
       <div className="lobby-actions">
         <button
@@ -364,7 +366,14 @@ function LobbyPanel({
           Покинуть комнату
         </button>
       </div>
-      {!online && <p className="muted">Нет связи — вернём вас на место автоматически.</p>}
+      <img
+        className="lobby-decoration"
+        src="/art/hat-lantern.webp"
+        alt=""
+        width="700"
+        height="350"
+        aria-hidden="true"
+      />
     </section>
   );
 }
@@ -372,7 +381,6 @@ function LobbyPanel({
 function InviteLink({ link }: { link: string }) {
   const [message, setMessage] = useState('');
   const timer = useRef<number | undefined>(undefined);
-  const canShare = typeof navigator.share === 'function';
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
@@ -393,30 +401,23 @@ function InviteLink({ link }: { link: string }) {
   return (
     <div className="invite">
       <label htmlFor="invite-link" className="hint">
-        Ссылка-приглашение
+        Приглашение
       </label>
       <div className="invite-row">
-        <input
+        <textarea
           id="invite-link"
-          type="text"
+          name="invitation"
+          rows={1}
+          wrap="soft"
           readOnly
+          className="invite-url"
           value={link}
           onFocus={(event) => event.target.select()}
         />
         <button type="button" className="button button--small" onClick={() => void copy()}>
+          <img src="/icons/copy.svg" alt="" width="20" height="20" />
           Копировать
         </button>
-        {canShare && (
-          <button
-            type="button"
-            className="button button--small"
-            onClick={() =>
-              void navigator.share({ title: 'Bang!', url: link }).catch(() => undefined)
-            }
-          >
-            Поделиться
-          </button>
-        )}
       </div>
       <span className="copy-status" role="status">
         {message}

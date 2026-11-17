@@ -1,5 +1,12 @@
 # Verification status
 
+## Saloon redesign and short invitations — 2026-11-17
+
+- Implemented the user-selected saloon revision with original optimized WebP art, self-hosted Cyrillic fonts, responsive forms/roster, and minimal normal-state copy. See [DESIGN.md](../DESIGN.md) and [visual verification](../design-qa.md).
+- New invitations use the full origin and `/r/<CODE>`, with six-character codes. Existing ten-character rooms and `/room/` links still work. Migration 2 preserves old rooms, tokens, and readiness, and keeps collision retries safe.
+- Fresh `npm run check` passed: **116 tests in 7 files**, PostgreSQL integration tests without skips, lint, strict TypeScript, server/client builds, and Prettier. Focused coverage includes short/legacy paths, pasted full URLs, migrated legacy sessions, real code collisions, and production SPA fallback routes.
+- Browser checks passed: create, invitation join in a separate profile, four-player readiness updates, guest refresh restoring the same ready seat, copy feedback, mobile host removal, and leaving. Local test seats were released. Browser viewports at 320px/390px had no page overflow; a complete production URL fits through wrapping at 320px. Real phone/tablet testing remains open.
+
 ## Production lobby deployment — 2026-11-17
 
 - Deployed at <https://bang.dazinho.ru> on the shared VoiceRoom host. The app and its separate PostgreSQL container are healthy; `/api/ready` returned HTTP 200 with `database: connected`. Caddy configuration validation passed.

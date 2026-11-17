@@ -1,0 +1,12 @@
+Saloon surface assets — generated 2026-11-17 with the built-in image_gen tool.
+Style reference: selected revised saloon mockup, exec-772ca0b8-9854-4c57-8aa8-07c9ab5a0acf.png.
+PNG generation originals are retained outside the repository. Final WebP assets were resized with FFmpeg and visually inspected.
+
+parchment.webp — 512x512, WebP quality 82
+Prompt: Generate only a seamless square warm aged parchment paper texture, fine irregular paper fibers, faint mottling, low contrast, uniform ivory tan approximately #f4deb3. Flat top-down material with seamless edges in every direction. No lighting gradient, vignette, objects, text, ornament, torn edges, borders, or shadows. It must support readable dark brown interface text when repeated as a CSS background.
+
+walnut.webp — 768x512, WebP quality 82
+Prompt: Generate only a seamless dark reddish walnut wood surface for a Western saloon page background and header. Warm deep brown approximately #3c1b0e with amber and oxblood undertones, horizontal fine grain, low-to-medium contrast, old polished walnut. Flat top-down material, no plank seams, large knots, vignette, directional light gradient, objects, borders, nails, lettering, signs, or logos. Seamless edges in every direction.
+
+hat-lantern.webp — 700x350, WebP quality 85, alpha preserved
+Prompt: Isolated original cowboy hat, loose coil of rope, and glowing old oil lantern on a thin sliver of dark walnut table along the bottom edge. Match the reference's lower-right warm engraved/woodcut illustration and amber lighting. Wide composition weighted to the lower right with transparent space above and left. Brown leather hat, braided hemp rope, antique bronze lantern with orange glow. Full transparent alpha outside objects; no parchment backdrop, UI, text, logo, border, white backdrop, or opaque shadow rectangle. Keep objects and glow within frame.

@@ -11,7 +11,7 @@ interface NameFieldProps {
 export function NameField({ id, value, onChange, errorId, invalid }: NameFieldProps) {
   return (
     <div className="field">
-      <label htmlFor={id}>Ваше имя за столом</label>
+      <label htmlFor={id}>Ваше имя</label>
       <input
         id={id}
         name="name"
@@ -23,12 +23,9 @@ export function NameField({ id, value, onChange, errorId, invalid }: NameFieldPr
         spellCheck={false}
         value={value}
         aria-invalid={invalid || undefined}
-        aria-describedby={[`${id}-hint`, invalid ? errorId : undefined].filter(Boolean).join(' ')}
+        aria-describedby={invalid ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
       />
-      <span id={`${id}-hint`} className="hint">
-        До {DISPLAY_NAME_MAX_LENGTH} символов. Имя видят все игроки комнаты.
-      </span>
     </div>
   );
 }

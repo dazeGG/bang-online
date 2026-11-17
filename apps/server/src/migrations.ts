@@ -47,6 +47,15 @@ export const migrations: readonly Migration[] = [
         REFERENCES seats (id) ON DELETE SET NULL;
     `,
   },
+  {
+    version: 2,
+    name: 'short_room_codes',
+    sql: `
+      ALTER TABLE rooms DROP CONSTRAINT rooms_code_check;
+      ALTER TABLE rooms ADD CONSTRAINT rooms_code_check
+        CHECK (code ~ '^([ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}|[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{10})$');
+    `,
+  },
 ];
 
 const MIGRATION_LOCK_KEY = 'bang:schema-migrations';

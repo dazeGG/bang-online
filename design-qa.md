@@ -1,0 +1,40 @@
+# Saloon design verification
+
+Date: 2026-11-17. Source visual truth: [approved revision](docs/design/saloon-reference.png). The implementation uses live lobby behavior, not a screenshot as UI.
+
+## Capture and normalization
+
+- Source board: 1536 × 1024 px, containing two coordinated desktop screens. Home crop: 730 × 974 at (24, 24); lobby crop: 730 × 974 at (780, 24).
+- Implementation desktop viewport: 784 × 1024 CSS px, device pixel ratio 1.25, raw browser capture 980 × 1280 px. Normalize to 784 × 1024, then crop the 736 × 976 paper sheet at (24, 24). The source crops are padded by 6 × 2 px, not stretched, to align the sheet boundaries.
+- [Home comparison](docs/design/qa-home.png) and [lobby comparison](docs/design/qa-lobby.png) put reference on the left and implementation on the right at 1472 × 976 px.
+- The four-player lobby has the same readiness state as the reference: host not ready, three guests ready. Test room code and guest join order differ. Local invitations correctly use the local HTTP origin; production invitations use the public HTTPS origin.
+- [Mobile home](docs/design/qa-mobile-home.png): 390 × 844 CSS px, 1.25 DPR. [Mobile host roster](docs/design/qa-mobile-host.png): 320 × 740 CSS px, 1.25 DPR. These are responsive browser viewports, not physical-device tests.
+
+## Comparison history
+
+1. **P2: typography and composition.** Initial display headings and form labels were smaller than the approved reference, while the hero used too much vertical space. Increased the display/label type, tightened hero and roster rhythm, aligned form gutters, and recaptured both desktop screens. The final side-by-side images show the same hierarchy and core controls.
+2. **P2: hero subtitle readability.** Illustration details crossed the subtitle. Added a restrained paper-colored backing behind the subtitle; it stays readable without replacing the real artwork. Final desktop/mobile captures show the correction.
+3. **P2: narrow-screen host controls.** Initial removal controls were 40px and overlapped readiness hit areas. Moved them below the player name on narrow screens, with a 48px target and a visible label. Final mobile roster capture and DOM measurements confirmed separate hit areas and 48px heights.
+4. **P2: full invitation visibility at 320px.** A single-line field clipped the complete production URL. Replaced it with a labeled read-only, vertically resizable textarea; it remains one line on desktop and wraps on mobile. At 320px, the complete `https://bang.dazinho.ru/r/K7M4RW` fit with no internal horizontal/vertical overflow (clientHeight and scrollHeight both 70px). Copy/select behavior is preserved.
+
+## Findings
+
+No actionable P0/P1/P2 findings remain. Full-view comparisons cover structure, type hierarchy, colors, imagery, and copy. A focused review checked roster labels, readiness badges, protocol/path visibility, inputs, primary/secondary buttons, and mobile removal controls at native capture size. A separate enlarged crop was unnecessary because the supplied comparison images retain readable control text.
+
+The implementation preserves the selected paper/wood/oxblood direction, original sunset saloon artwork, grouped roster, hat/lantern artwork, and quieter copy. No connected-state caption or duplicate readiness count is visible. The browser DOM retains native forms, labels, focus outlines, error announcements, and plain-text readiness.
+
+## Interaction verification
+
+- Created a new six-character room from the browser and joined through `/r/` in a separate browser profile.
+- Four live seats received shared readiness/presence updates. After refreshing the guest, the same seat id and ready state returned without a duplicate.
+- The copy button reported «Ссылка скопирована» and copied the full origin plus `/r/<CODE>` invitation.
+- Host removal and leave confirmation worked with the revised mobile controls. All local test seats were released; the room preview reported zero seats.
+- No page overflow was detected at 320px or 390px. Full production-format URL wrapping was measured at 320px.
+- A temporary CSS syntax error during hot reload was fixed before the final build; it is visible only in historical dev-console entries. No unresolved runtime error remains. Production uses the freshly built assets rather than the dev HMR client.
+- `npm run check`: 116 tests in 7 files, no PostgreSQL skips; lint, strict types, build, and format checks passed. Migration 2 was applied locally.
+
+## Follow-up polish and limits
+
+P3: the freely licensed slab typeface, clean badge borders, and button trim approximate the generated reference's custom distressed lettering and metalwork. The recreated illustration differs in small scene details. These do not affect hierarchy or behavior. Real iOS Safari/Android testing and gameplay design remain future work.
+
+final result: passed

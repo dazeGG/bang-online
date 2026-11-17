@@ -28,7 +28,9 @@ npm run dev
 
 Copy `.env.example` only for a fresh checkout; preserve an existing `.env` and its local settings. The browser client opens at <http://localhost:5173>; the API listens at <http://localhost:3001>. The client uses Vite's same-origin proxy for API and Socket.IO traffic.
 
-Open the client, create a room, and send the invitation link (`/room/<CODE>`) to the other players. To try several players on one computer, use separate browser profiles or private windows: tabs of one browser profile share the same seat by design.
+Open the client, create a room, and send the full invitation link (`https://bang.dazinho.ru/r/<CODE>`) to the other players. New codes contain six characters. Existing ten-character codes and `/room/<CODE>` invitations still work. To try several players on one computer, use separate browser profiles or private windows: tabs of one browser profile share the same seat by design.
+
+The interface follows the approved saloon design: warm paper, walnut, original sunset artwork, and locally hosted Cyrillic fonts. Connection notices appear only when disconnected; readiness is shown per player. See [the design contract](DESIGN.md) and [visual verification](design-qa.md).
 
 Without PostgreSQL the server still starts and liveness works, but room endpoints answer `503 unavailable`, and `/api/ready` and `db:check` fail. Without applied migrations `/api/ready` reports `migrations_pending`. A running Docker CLI alone is insufficient: Docker Desktop's engine must also be available for `db:up`.
 

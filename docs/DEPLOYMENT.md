@@ -20,6 +20,8 @@ bash deploy/deploy.sh
 
 The script builds `linux/amd64` locally, transfers the image over SSH without a registry, uploads the deployment files, and waits for container health. The default host, directory, and domain are configured in the script; the Caddy site itself currently uses the fixed `bang.dazinho.ru` hostname. It retains the three newest Bang images for rollback. Migrations are append-only; an application rollback does not roll back database migrations.
 
+The saloon update applies migration 2 for six-character room codes while retaining existing ten-character rooms. After migration 2, images that only know migration 1 reject the newer schema at startup; use an image that understands migration 2 rather than attempting a database downgrade.
+
 ## Inspect and stop
 
 ```bash
