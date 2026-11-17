@@ -9,6 +9,7 @@ Date: 2026-11-17. Source visual truth: [approved revision](docs/design/saloon-re
 - [Home comparison](docs/design/qa-home.png) and [lobby comparison](docs/design/qa-lobby.png) put reference on the left and implementation on the right at 1472 × 976 px.
 - The four-player lobby has the same readiness state as the reference: host not ready, three guests ready. Test room code and guest join order differ. Local invitations correctly use the local HTTP origin; production invitations use the public HTTPS origin.
 - [Mobile home](docs/design/qa-mobile-home.png): 390 × 844 CSS px, 1.25 DPR. [Mobile host roster](docs/design/qa-mobile-host.png): 320 × 740 CSS px, 1.25 DPR. These are responsive browser viewports, not physical-device tests.
+- [Production mobile lobby](docs/design/qa-production-mobile.png): 320 × 900 CSS px, 1.25 DPR, with the complete HTTPS invitation visibly wrapping and working readiness/leave controls.
 
 ## Comparison history
 
@@ -32,6 +33,7 @@ The implementation preserves the selected paper/wood/oxblood direction, original
 - No page overflow was detected at 320px or 390px. Full production-format URL wrapping was measured at 320px.
 - A temporary CSS syntax error during hot reload was fixed before the final build; it is visible only in historical dev-console entries. No unresolved runtime error remains. Production uses the freshly built assets rather than the dev HMR client.
 - `npm run check`: 116 tests in 7 files, no PostgreSQL skips; lint, strict types, build, and format checks passed. Migration 2 was applied locally.
+- Production verification of source commit `6010cd9` / image `bang:20261117161028-6010cd9` passed through public HTTPS: local fonts/art loaded, no CSP/console/network errors appeared, readiness and copy worked, and refresh restored the same ready seat. The real full HTTPS invitation fit a 320px viewport without internal/page overflow. The test seat was released. GitHub CI passed.
 
 ## Follow-up polish and limits
 
