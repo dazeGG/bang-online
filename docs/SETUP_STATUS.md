@@ -1,5 +1,25 @@
 # Verification status
 
+## Complete classic implementation — 2026-11-17, local release verified; publication pending
+
+The local code now implements a full classic match for **4–7 players**, with all 80 physical cards/22 kinds, 16 characters, turn/effect/rescue/elimination/victory logic and authorized private projections. [CLASSIC_RULES.md](CLASSIC_RULES.md) maps the physical inventory and every card/character/FAQ case to actual named tests; Q01 is explicitly outside software enforcement.
+
+Implemented persistence/transport includes migration 3, exact JSON snapshots, restrictive fixed participants, atomic accepted-command receipts, authenticated protocol-3 game events, retry conflict/revision handling, per-seat publication and restart synchronization. Required actors are awaited without penalties; unrelated absent players do not globally pause. The fixed host can abort without winners, including after elimination. Active and terminal room membership stays fixed; the next game needs a new room.
+
+The saloon client supports all public decision shapes, card/character details, ordered and multiple selections, local parallel mass drafts with refreshed defense guards, durable exact-envelope retries, multi-tab outbox coordination and terminal results. Fresh **`npm run check` passed completely** after review fixes: lint, all workspace/test TypeScript checks, **362 tests in 18 files with actual PostgreSQL and no skips**, both production builds and repository formatting. The suites include complete legal games for every supported count and targeted rare-boundary fixtures. Independent code review approved the change and the architectural review cleared its findings. A subsequent presentation-only terminal-copy adjustment has focused rendering assertions; no gameplay behavior changed.
+
+Local browser verification completed a normal four-player match through ordinary controls using **two independent browser profiles and two test-only protocol peers**. The match reached revision 35 with an Outlaws victory; it was not four independent browser contexts. Covered flows include ready/start, Bang/Missed, Duel, Pedro's discard choice, Winchester, ordered discard and Gatling. A future guest prepared a decline without changing life/cards; after the earlier responder resolved, the draft submitted with the fresh current decision and life changed from four to three. Reloading during pending Bang preserved four life/four cards and available Missed, while the host displayed penalty-free waiting. Responding through the card-details dialog reduced the hand from four to three without life loss. Reloading the terminal result retained the winner and exposed no gameplay or abort controls.
+
+Browser environment: Chromium 152 in Electron 44 on Windows. At 360 CSS pixels, page client/scroll widths both measured 345px, primary controls were at least 48px, and the native details dialog fit inside the viewport. Strict Mode dialog reopening, safe «Закрыть» focus, Escape and response-from-details were exercised. Desktop review used a 1440×900 CSS viewport; the screenshot provider scaled the captured image to 1280px width. Brief 502 responses during development watcher restarts recovered; they were observed in the development environment, not reported as production runtime evidence. Physical iOS/Android devices were not tested.
+
+A separate ordinary four-seat ready/start browser scenario verified host abort. Guests had no abort control. The native confirmation initially focused «Закрыть»; cancelling preserved turn 1, the draw decision and the host's five-card hand. Confirming on reopening produced `aborted` revision 2 with no pending decision and no winner in both profiles. Guest refresh retained the terminal result without actions/abort controls. The final copy displayed the no-winner phrase once. Test-only peers were stopped gracefully; retained match participants were not deleted.
+
+**Local browser and automated release verification are complete within the stated two-browser/two-protocol-peer and desktop/emulated-viewport limits. Publication remains pending:** the public site still runs the earlier saloon/lobby image recorded below. No complete-game source/image or public play/reconnect receipt has been recorded yet. Compatible recovery-build preparation and deployment verification remain publication gates. Prior lobby screenshots alone do not prove gameplay acceptance.
+
+Migration 3 cannot be rolled back by selecting an image that only understands migrations 1/2. Preserve the database volume and recover using a schema-3-compatible image; do not downgrade/drop game data. Operational follow-ups remain real iOS/Android tests, backups/restore drills, rate limiting, abandoned-room expiry and external monitoring.
+
+The sections below are historical receipts for earlier releases. Their old implementation boundaries and counts are not the current local source boundary.
+
 ## Saloon redesign and short invitations — 2026-11-17
 
 - Published source commit `6010cd9` to the public GitHub repository and deployed image `bang:20261117161028-6010cd9`. GitHub CI passed for that commit. Both production containers are healthy; PostgreSQL records migrations 1 and 2, and public `/api/ready` reports `database: connected`.
@@ -18,7 +38,7 @@
 - Browser checks in separate default/incognito profiles passed: create room with a Cyrillic name, open invitation and join, see each other's presence/readiness, reload both profiles without duplicate seats, retain readiness, and leave. The guest's seat id was unchanged after reload. No browser console errors were recorded during these flows. Both browser test seats were released afterwards.
 - At the deployment check, app memory was about 96 MiB of its 192 MiB limit; PostgreSQL used about 39 MiB of its 160 MiB limit. These are a snapshot, not a load-test result.
 
-Remaining gaps: real phone/tablet testing, automated backups and restore verification, external monitoring, abandoned-room expiry, and request rate limiting. Gameplay is not implemented. Earlier local-only verification gaps below describe the state before this deployment.
+At that lobby release, remaining gaps were real phone/tablet testing, automated backups and restore verification, external monitoring, abandoned-room expiry, request rate limiting and gameplay. The complete-game implementation/verification status now appears above. Earlier local-only gaps below describe their historical state.
 
 ## Private lobby milestone — 2026-11-17
 
@@ -47,4 +67,4 @@ TypeScript is intentionally pinned to 6.0.3: the selected typescript-eslint rele
 
 The root `.env` contains only the development defaults copied from `.env.example` and is ignored by Git. Preserve local changes to it when continuing.
 
-Next implementation: the first playable turn in `PROJECT_BRIEF.md`.
+Current continuation: finish the integrated complete-game verification/publication gates in the newest section above; do not restart a first-turn milestone.

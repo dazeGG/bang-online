@@ -1,25 +1,23 @@
-# Стартовый промпт для нового чата
+# Continuation prompt
 
-Работаем над проектом `E:\WORK\pet\Bang!` — приватной браузерной онлайн-версией BANG! для игры с друзьями с компьютера, телефона и планшета.
+Continue `E:\WORK\pet\Bang!`, the private browser-based classic BANG! project. Communicate with the user in Russian; write internal documentation and code comments in English. Read `AGENTS.md`, `README.md`, `docs/PROJECT_BRIEF.md`, `docs/CLASSIC_RULES.md`, `docs/LOBBY.md`, `docs/SETUP_STATUS.md` and the actual code before changing anything.
 
-Сначала прочитай `AGENTS.md`, `README.md`, `docs/PROJECT_BRIEF.md`, `docs/LOBBY.md` и `docs/SETUP_STATUS.md`, затем изучи текущие файлы и проверь состояние проекта (`npm run db:up`, `npm run db:migrate`, `npm run check`).
+The agreed release is a **complete classic game for 4–7 players**, all 80 playing cards/22 kinds and all 16 characters, from ready lobby to victory. The current local implementation includes the rules engine, private per-seat projections, PostgreSQL snapshot/receipt persistence, protocol-3 socket service and saloon game UI. Do not replace the objective with a first-turn demo. Check `SETUP_STATUS.md` for verification and publication receipts before claiming that the public site runs this build.
 
-Согласованные решения:
+Keep React/Vite, strict TypeScript, Node 24/Fastify/Socket.IO, PostgreSQL and the four npm workspaces. No new dependencies or infrastructure without a concrete accepted need. Expansions, 3/8-player modes, Redis, bots, accounts, public matchmaking, voice and native clients are excluded.
 
-- Первая версия — только классическая BANG! на **4–7 игроков**, в итоге со всеми базовыми картами и персонажами.
-- Dodge City, режимы на троих/восьмерых, Redis, боты, публичный подбор игроков, встроенный голосовой чат и нативные приложения пока не делаем.
-- Стек: TypeScript, React/Vite, Node.js 24, Fastify, Socket.IO, PostgreSQL; npm workspaces.
-- Игровой движок находится в `packages/game-core` и не зависит от интерфейса, сети или базы. Публичные контракты — в `packages/contracts`.
-- Сервер проверяет действия и хранит скрытые данные. Клиент получает только разрешённое конкретному игроку представление.
+Preserve these decisions:
 
-Уже сделано и проверено на реальной PostgreSQL: приватное лобби — создание комнаты, приглашение по ссылке, вход по имени, секретный токен места (в базе только хеш), готовность, удаление игрока хозяином, присутствие, возвращение на своё место после обновления страницы, переподключения и перезапуска сервера. Подробности и определённое поведение — в `docs/LOBBY.md`.
+- Wait without timers or penalties for the current required actor; unrelated missing seats do not pause earlier decisions. Multiple tabs represent one seat. The fixed host may explicitly abort, even after elimination, without a winner.
+- Mass-attack choices may be prepared locally in parallel. Authoritative checks/consequences proceed clockwise; changed defense guards require a new choice. Victory follows the whole mass effect.
+- Sid's eligible two-hand-card heal may interrupt another player's pending decision without changing its ID/owner/continuation.
+- Server-authoritative hidden state never reaches unauthorized seats. Concrete deck/outcomes, pending choices, policy and versions survive reconnect/restart. Unknown state fails closed, never redeals.
+- Room lock precedes match lock. Authenticate before scoped receipt lookup; identical accepted retries return the original result before stale checks and consume no entropy. Snapshot/lifecycle/receipt commit before acknowledgement.
+- Active and terminal participants/host are fixed. No leave, kick, join or readiness mutation after start; no terminal reset/rematch. Create a new room for another game.
+- Keep guest tokens and six/ten-character `/r/` and `/room/` compatibility. Preserve approved saloon assets, quiet connection copy and full HTTPS invitation.
 
-Лобби развёрнуто на <https://bang.dazinho.ru> на общем сервере VoiceRoom. Прочитай `docs/DEPLOYMENT.md`: Docker-образ собирается локально и передаётся по SSH, приложение и отдельная PostgreSQL работают с лимитами памяти, HTTPS обслуживает существующий Caddy. Код опубликован в <https://github.com/dazeGG/bang-online>. Бэкапы и проверка восстановления пока не настроены.
+Run focused checks, then `npm run check` with actual PostgreSQL (`npm run db:up`, `npm run db:check`, `npm run db:migrate` as necessary). Do not overwrite an existing `.env`. Database tests use disposable isolated schemas; report skipped/unavailable checks honestly. Browser and real-device evidence are distinct from automated test passes.
 
-Новый дизайн — выбранный пользователем салун с бумагой, деревом и иллюстрацией заката. Смотри `DESIGN.md`, `design-qa.md` и `docs/design/saloon-reference.png`. Из нормального интерфейса убраны технический статус соединения и повторный счётчик готовности. Приглашения показываются целиком с протоколом и путём `/r/`; новые коды состоят из 6 символов. Миграция 2 сохраняет старые 10-символьные комнаты, токены и готовность; старые `/room/` ссылки тоже продолжают работать.
+The public repository is <https://github.com/dazeGG/bang-online>; the established deployment is <https://bang.dazinho.ru>. Read `docs/DEPLOYMENT.md` before publishing. Migration 3 adds durable matches and participant restrictions. Images that only know schema 1/2 cannot be used for rollback after migration 3; use a compatible recovery build, never downgrade the database or remove volumes. Preserve the shared host's neighboring services and never expose credentials.
 
-Следующий этап — **первый играбельный ход**: хозяин запускает партию, когда `canStart` (4–7 готовых игроков); сервер авторитетно раздаёт роли, персонажей и карты; каждый игрок получает только своё скрытое представление; фазы взятия/розыгрыша/сброса; простая пара «Бэнг!» → «Мимо!»; команды с уникальным идентификатором и ожидаемой ревизией, без повторного применения; состояние партии сохраняется в PostgreSQL атомарно до подтверждения. Сначала маленький завершённый сценарий, а не все карты сразу.
-
-Проверяй изменённое поведение тестами (скрытая информация, авторизация, порядок ответов, дубликаты команд, переподключение), затем `npm run check`. Если Docker/PostgreSQL недоступен, точно укажи, какие проверки не состоялись. Не удаляй существующие данные и не сбрасывай Docker volumes без прямого разрешения.
-
-Общайся со мной по-русски, внутреннюю документацию пиши по-английски. В финале кратко укажи, что работает, как запустить и проверить, какие ограничения остались и какой следующий небольшой этап логичен.
+Finish with the concrete implemented boundary, fresh verification evidence, deployment state and remaining limitations. Continue safe reversible work autonomously within the current task.

@@ -1,5 +1,21 @@
 # Saloon design verification
 
+## Complete-game UI — local browser and automated verification
+
+The game table extends the approved paper/wood/oxblood interface with private hand/role, clockwise public boards, card/character detail dialogs, server-derived decisions, mass-response preparation, durable request feedback, waiting and terminal/host-abort flows. It does not replace the selected home/lobby design or add new artwork.
+
+Local automated evidence: `apps/web/test/game-interface.test.ts` covers every public decision render shape, explicit ordered/multiple selection, private/escaped content, host/guest/terminal controls, defense actions from hand details, single terminal winner copy and historical check/damage copy. `game-command-state.test.ts` covers exact-envelope restoration, cross-tab adoption/compare-before-clear, revision/presence filtering and changed-defense preparation guards. `modal-lifecycle.test.ts` covers queued Strict Mode close events and safe initial focus. All 64 web tests pass; the latest integrated `npm run check` passed with 362 tests across 18 files, actual PostgreSQL, lint, strict types, builds and formatting after review fixes. The small subsequent terminal-copy adjustment has focused regression coverage.
+
+The local four-player browser/protocol scenario reached an Outlaws victory at revision 35, using two independent browser profiles and two test-only protocol peers. Ordinary controls exercised ready/start, Bang/Missed, Duel, Pedro's discard choice, Winchester, ordered discard and Gatling preparation. The future responder's prepared decline left life/cards unchanged; becoming current submitted the fresh response and reduced life from four to three. A guest refresh during pending Bang preserved four life/four cards and the Missed response while the host showed unlimited waiting. Terminal refresh preserved winner and removed response/abort controls.
+
+The details dialog remains native `:modal`, fits the 360px viewport (horizontal bounds 16–329px, vertical 262–538px), focuses «Закрыть» after Strict Mode reopening, closes through Escape and permits the face-labelled response action. A Missed response from details reduced four cards to three with life unchanged. Page client/scroll widths both measured 345px at 360 CSS pixels; primary controls measured at least 48px. Desktop review used 1440×900 CSS pixels, with provider-scaled 1280px-wide captures. Environment: Chromium 152/Electron 44 on Windows. Brief development watcher restart 502 responses recovered. This was not a physical phone/tablet test or production verification.
+
+Host-abort confirmation was verified in a separate four-seat ready/start scenario. Guests had no abort button. The dialog focused the safe «Закрыть» control; cancellation retained turn 1/draw and the host's five cards. Confirming after reopening produced an aborted revision-2 result in both profiles, with no winner or pending choice. Guest refresh preserved that result with no actions/abort control, and the no-winner phrase appeared once after the presentation cleanup. Test-only peers disconnected gracefully; retained participants were not removed.
+
+Local game UI verification is complete within these two-browser/two-protocol-peer and emulated-viewport limits. Complete-game publication still needs its separate receipt. The historical captures/results below verify the earlier home/lobby redesign only. Real iOS/Android tests remain unperformed.
+
+## Earlier home/lobby visual verification
+
 Date: 2026-11-17. Source visual truth: [approved revision](docs/design/saloon-reference.png). The implementation uses live lobby behavior, not a screenshot as UI.
 
 ## Capture and normalization
@@ -37,6 +53,6 @@ The implementation preserves the selected paper/wood/oxblood direction, original
 
 ## Follow-up polish and limits
 
-P3: the freely licensed slab typeface, clean badge borders, and button trim approximate the generated reference's custom distressed lettering and metalwork. The recreated illustration differs in small scene details. These do not affect hierarchy or behavior. Real iOS Safari/Android testing and gameplay design remain future work.
+P3: the freely licensed slab typeface, clean badge borders, and button trim approximate the generated reference's custom distressed lettering and metalwork. The recreated illustration differs in small scene details. These do not affect hierarchy or behavior. Real iOS Safari/Android testing remains future work. The new game table's separate verification status appears at the top of this document.
 
-final result: passed
+Earlier home/lobby visual result: passed. Complete-game local match/layout/dialog/abort verification: passed as described above. Production verification remains pending.

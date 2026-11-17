@@ -1,6 +1,6 @@
 # Production deployment
 
-The private lobby is available at <https://bang.dazinho.ru> on the shared VoiceRoom host (`daze@193.233.91.146`). Gameplay is not implemented yet.
+The established deployment is <https://bang.dazinho.ru> on the shared VoiceRoom host (`daze@193.233.91.146`). The public site currently runs the earlier lobby image; the complete classic-game implementation is local and its publication is pending. See [SETUP_STATUS.md](SETUP_STATUS.md) for exact verified build receipts.
 
 ## Layout and limits
 
@@ -20,7 +20,11 @@ bash deploy/deploy.sh
 
 The script builds `linux/amd64` locally, transfers the image over SSH without a registry, uploads the deployment files, and waits for container health. The default host, directory, and domain are configured in the script; the Caddy site itself currently uses the fixed `bang.dazinho.ru` hostname. It retains the three newest Bang images for rollback. Migrations are append-only; an application rollback does not roll back database migrations.
 
-The saloon update applies migration 2 for six-character room codes while retaining existing ten-character rooms. After migration 2, images that only know migration 1 reject the newer schema at startup; use an image that understands migration 2 rather than attempting a database downgrade.
+The complete-game update applies migration 3 (`durable_classic_matches`), widening room lifecycle and adding match snapshots, restrictive participant references and command receipts. Existing rooms, six/ten-character invitations and hashed seat credentials are preserved. Migrations 1 and 2 remain unchanged.
+
+**After migration 3, an old image that only knows migrations 1/2 cannot be used for rollback:** the server rejects unknown schema versions at startup. Retaining an old image is therefore insufficient. Recovery requires an image that understands migration 3 and the persisted match schema/ruleset/catalog, with compatible code fixes if necessary. Never downgrade the schema, remove participant references or restore a clean volume to bypass this check. Before publication, verify the upgrade and prepare a schema-3-compatible recovery build. Automated backups/restore drills remain separate unfinished operational work.
+
+Before updating, run `npm run check` with actual PostgreSQL and inspect migration-upgrade, command-atomicity and restart tests. Deploy only a verified source revision; record its commit/image and public readiness separately. Startup's migration command runs before the app and does not drop/recreate existing game data.
 
 ## Inspect and stop
 
@@ -31,10 +35,12 @@ ssh daze@193.233.91.146 'cd ~/bang && docker compose stop'
 ssh daze@193.233.91.146 'cd ~/bang && docker compose up -d --wait'
 ```
 
-Stopping preserves rooms and seats. While stopped, the public site returns an upstream error; no maintenance page is configured. Never use `down -v` for routine operations.
+Stopping preserves rooms, seats, matches, pending decisions and receipts. While stopped, the public site returns an upstream error; no maintenance page is configured. Never use `down -v` for routine operations. Preserve the shared Caddy configuration, neighboring containers and the existing database volume.
 
 ## Verification and remaining work
 
-Deployment was verified on 2026-11-17: HTTPS, database readiness, room creation, invitation join in a separate browser profile, readiness propagation, refresh restoration, and leaving both test seats. The public HTTP/Socket.IO smoke test also verified WebSocket upgrade and rejection of foreign origins and invalid seat tokens. See [SETUP_STATUS.md](SETUP_STATUS.md).
+The earlier lobby deployment was verified on 2026-11-17: HTTPS, database readiness, room creation, invitation join in a separate browser profile, readiness propagation, refresh restoration, and leaving both test seats. The public HTTP/Socket.IO smoke test also verified WebSocket upgrade and rejection of foreign origins and invalid seat tokens. Those checks do not prove gameplay deployment.
+
+After publishing the complete-game build, verify HTTPS `/api/ready` reports a connected, migrated database; then create a controlled 4-player room, ready/start, inspect private views, perform a play/response, refresh/reconnect, and verify the same match/seat/pending state. Separately verify host-confirmed abort with no winner or a normal terminal result. Record the exact source/image, migration versions and outcomes in [SETUP_STATUS.md](SETUP_STATUS.md). Do not inspect unrelated private games or remove retained seats to clean up an active/terminal test room.
 
 Real phone/tablet testing, request rate limiting, abandoned-room expiry, automated backups and restore verification, external monitoring, and automated application rollback remain open. This is a small private preview deployment.

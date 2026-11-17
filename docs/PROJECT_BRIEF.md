@@ -1,75 +1,51 @@
 # Project brief
 
-## Goal and agreed scope
+## Outcome and scope
 
-Build a private online version of classic BANG! that friends can play from desktop, phone, and tablet browsers. Joining should be straightforward: follow an invitation link, choose a name, and take a seat.
+A private online classic BANG! match for **4–7 friends**, from a ready lobby through deal, all base cards and characters, elimination and victory. The local implementation contains the complete 80-card physical deck (22 kinds), 16 characters, durable guest seats and recoverable pending decisions. Publication and browser evidence are tracked separately in [SETUP_STATUS.md](SETUP_STATUS.md); the public site remains on the previous lobby release until the complete-game deployment is verified.
 
-The first release targets **4–7 players**, all base-game cards and characters, private rooms, clear action prompts, and reliable reconnects. The group usually has 4–7 participants and occasionally three or eight. The user explicitly chose to postpone Dodge City rather than expand the first release to cover those occasional counts.
+Dodge City and other expansions, 3/8-player modes, Redis, bots, public matchmaking, built-in voice/video, accounts, spectators, native clients and PWA installation are outside this release. Finishing or aborting leaves a terminal room; the next match uses a new room.
 
-Out of scope for the first release: Dodge City and other expansions, three/eight-player modes, custom player-count balancing, Redis, bots, public matchmaking, built-in voice/video, and native apps. Optional PWA installation can follow a reliable browser experience.
+## Stack and boundaries
 
-## Current implementation boundary
+- npm workspaces: React/Vite client in `apps/web`, Node.js 24/Fastify/Socket.IO in `apps/server`, public transport types in `packages/contracts`, pure rules in `packages/game-core`.
+- PostgreSQL stores rooms, hashed guest-seat credentials, exact authoritative match snapshots, fixed participants and command receipts. No rules depend on React, sockets or database access.
+- The server validates untrusted payloads and derives the actor from the authenticated seat. All room mutations share the room-row lock; game operations then lock the match in the same order.
+- Setup and accepted transitions use injected randomness. Production uses Node `crypto.randomInt`; snapshots contain concrete outcomes, not a seed or homemade persisted random generator. A duplicate accepted command does not consume entropy.
+- Accepted state, lifecycle and receipt commit atomically before acknowledgement. A retried ID with the same fingerprint returns its original receipt; a changed request conflicts. Receipts contain safe result metadata, never a historical private view.
 
-The initial setup provides:
+## Rules baseline and decisions
 
-- npm workspaces with strict TypeScript;
-- a responsive React/Vite client with real connection status;
-- a Fastify/Socket.IO server with liveness and database readiness checks;
-- PostgreSQL connection configuration and local Docker Compose;
-- shared transport contracts;
-- a pure game-core foundation with classic limits and role distributions;
-- lint, typecheck, test, and build commands.
+The pinned baseline is the publisher's fourth-edition English rules plus the official English FAQ with 26 answers. [CLASSIC_RULES.md](CLASSIC_RULES.md) records sources, hashes, all 80 physical faces and named tests for every kind/character/FAQ case. The two Stagecoach 9-spades copies have different physical IDs.
 
-Milestone 1 (private lobby) adds: PostgreSQL migrations (`rooms`, `seats`, `schema_migrations`), room creation and invitation links, join by name, secret seat tokens stored as SHA-256 digests, readiness, host removal of seats, presence, and refresh/reconnect/restart restoration of the same seat. See [LOBBY.md](LOBBY.md) for the protocol and defined edge cases.
+Additional explicit decisions:
 
-The lobby is deployed at <https://bang.dazinho.ru> on the shared VoiceRoom host with an isolated PostgreSQL container and HTTPS through the existing Caddy. See [DEPLOYMENT.md](DEPLOYMENT.md). Gameplay, match start, match persistence, and an installable PWA are not implemented. A successful connection indicator proves connectivity only.
+- Sid's eligible two-hand-card healing may interrupt another player's decision. Its ID, owner, remaining requirements and continuation survive the interrupt. The conflicting tournament restriction to Sid's own turn is not adopted.
+- Gatling/Indians allow **local parallel response drafts**. Checks and consequences resolve clockwise from the seat after the initiator; changed defense availability invalidates a draft. A fresh current decision/revision is required for the actual command. Victory follows the entire mass effect. The response-order convention was selected by the users and is not presented as a printed base rule.
+- Selected historical official clarifications cover recycling/order and Suzy/Gringo timing, as labelled in the coverage document. They do not import tournament abandonment timers.
+- Brown cards enter discard before their effects resolve; a Stagecoach can recycle itself. Historical reveals and effect source references are metadata, not extra ownership zones.
+- If both draw and discard sources are unavailable, the reducer returns a recoverable resource error without fabricating cards, failed checks, damage or victory. Synthetic exhaustion fixtures do not establish an official empty-source rule; a reachable legal unresolved case needs an explicit decision.
 
-## Architecture decisions
+## Privacy
 
-- **Client:** React + Vite + TypeScript. Use responsive DOM/CSS controls with tap-first interactions, readable card details, and explicit response prompts.
-- **Server:** Node.js 24 + Fastify + Socket.IO. Start with one server process and serialize commands within each room.
-- **Storage:** PostgreSQL. Future accepted commands, deduplication results, and durable match state must be committed atomically before an authoritative acknowledgement.
-- **Redis:** deferred. Introduce shared coordination infrastructure only when an actual multi-process deployment or measured requirement justifies it.
-- **Packages:** keep public contracts separate from pure game rules and private server state. Avoid a speculative expansion/plugin framework.
+Characters, health, equipment, hand counts, living order, the sheriff and roles revealed by elimination are public. Each seat sees only its own hand and unrevealed role. Other hands/roles, deck order, private Kit inspection and credentials are excluded from per-seat projections, errors and logs. Eliminated players do not receive a reveal-all view.
 
-Keep the ruleset version in future persisted matches. Match state must capture the shuffled deck, cards, roles, characters, living seats, current turn/phase, pending response/selection, and the defined timeout policy. Reopening an app must not reroll or reconstruct hidden state inconsistently.
+A bounded log stores the latest 64 public resolution summaries by revision/ordinal. Disclosed faces have no hidden card instance IDs and do not assert present hand ownership. Public Black Jack/check disclosures survive a dropped event and restart. Private bonus draws remain private.
 
-## Rules and information model
+## Lifecycle and recovery
 
-The server owns shuffle, deal, validation, resolution, and victory checks. The browser submits an intent and displays only the resulting authorized view.
+Room lifecycle is `lobby -> active -> finished | aborted`. The host starts only with 4–7 ready seats. Participant seats and host identity are fixed throughout active and terminal states; readiness, join, leave and kick cannot mutate them. Restrictive participant foreign keys also prevent direct seat deletion. Lobby-only host handover remains unchanged before start.
 
-Public information includes characters, health, played equipment, living seat order, the sheriff's role, and roles revealed on elimination. A player's own hand and unrevealed role are private to that player. Other hands, unrevealed roles, draw-pile order, and seat credentials must never appear in unauthorized socket payloads, HTTP responses, logs, or reconnect data. Eliminated players and spectators do not gain access to private information during an ongoing match.
+A required absent actor is awaited indefinitely, without damage, automatic decline, turn skipping or deadline. Unrelated absent seats do not block earlier decisions. A seat is present while any authenticated tab remains connected. Presence is derived from live sockets and does not alter the durable game revision.
 
-Treat responses outside the active player's turn as explicit phases/decisions. Relevant examples include defense against a shot, alternating discards in a duel, responses to mass attacks, ordered card selection, and rescue from lethal damage. Do not allow the next action to skip an unresolved effect.
+The fixed host, even if eliminated, can explicitly abort an active match without a winner. Abort uses the same command/revision/transaction guarantees and cannot overwrite a committed victory. No disconnect-triggered host takeover or rematch/reset is included.
 
-The initial foundation is not a complete rules engine. Use the official base rules and FAQ to derive behavior tests as mechanics are implemented. Pay attention to changing distances after elimination, weapon range versus distance modifiers, card-specific exceptions, character abilities, and victory checks after effects resolve.
+The snapshot stores schema/ruleset/catalog version, exact deck/zones, turn/phase, counters, serializable continuations, pending decisions, timeout policy and outcome. Reattach/sync reconstructs the authorized view without replaying effects. Unknown/corrupt state fails closed rather than redealing. Protocol 3 distinguishes game revision from room revision and orders same-revision presence by per-attachment delivery sequence.
 
-## Session and reconnect requirements
+The browser persists only an actually submitted envelope for retry with the same ID. An uncertain acknowledgement never causes a new-ID automatic replay. Prepared responses are separate local drafts and can be lost on refresh. Multi-tab outbox writes are coordinated with Web Locks; unsupported browsers show a read-only explanation. Existing six/ten-character invitations, `/r/` and legacy `/room/` routes and guest tokens are preserved.
 
-The lobby milestone satisfies the first two requirements and the full-resynchronization requirement for lobby state. The remaining items are acceptance requirements for gameplay:
+## Verification and operations
 
-- A guest's seat is authenticated by an unguessable secret, never by display name or public room code alone.
-- Refreshing or reconnecting restores only the authenticated player's seat and permitted state.
-- A command has a unique identifier and expected state revision. Duplicate attempts cannot consume another card or apply damage twice.
-- Socket reconnect recovery is an optimization; the application must also support an authenticated full state resynchronization.
-- Mobile app switching, lock screens, background suspension, and Wi-Fi/mobile transitions are normal reconnect cases.
-- Server time controls deadlines. The group-facing pause/disconnect policy must be explicit; the default preference is a friendly pause rather than a silent automatic loss.
-- A server restart preserves accepted state and unfinished decisions once gameplay persistence is implemented.
+Focused core tests cover mechanics and serialized choices; real PostgreSQL/store/socket tests cover atomicity, authorization, races, exact restart, retries and full legal matches for each player count. Client tests cover projection rendering, selection, outbox and preparation guards. Run `npm run check` with PostgreSQL available; a successful skipped local suite is insufficient database evidence. Browser and real-device checks are separate.
 
-## Implementation milestones
-
-1. **Private lobby vertical slice — implemented** (see [LOBBY.md](LOBBY.md)): create/join by link, names, secure guest-seat ownership, seat limits, readiness, and refresh/reconnect restoration. Persist the data needed for this milestone, with explicit migrations and relevant authorization/reconnect tests. A lobby may accept fewer than four waiting guests, while starting a classic match requires 4–7 ready players.
-2. **First playable turn:** authoritative setup, hidden per-player views, draw/play/discard phases, a basic shot/defense interaction, and revisioned idempotent commands. Make a small complete flow before adding all card effects.
-3. **Complete classic game:** all base cards and characters, out-of-turn effects, elimination, victory, and relevant official FAQ cases.
-4. **Reliability and device verification:** persistence/restart recovery, interrupted responses, multiple tabs, network transitions, phone/tablet layouts, and deployment preparation.
-
-Use focused tests and the repository checks at each milestone. Do not report complete classic BANG! based on a partial card subset or a UI-only prototype.
-
-## References
-
-- [Official base rules](https://www.dvgiochi.com/giochi/bang/download/Bang_rules_ENG.pdf).
-- [Official BANG! FAQ](https://www.dvgiochi.com/giochi/bang/download/Bang%21_FAQ_ENG.pdf).
-- [Socket.IO delivery guarantees](https://socket.io/docs/v4/delivery-guarantees/).
-- [Socket.IO connection state recovery](https://socket.io/docs/v4/connection-state-recovery/).
-
-Rules references should be pinned and any edition ambiguity recorded when the relevant behavior is implemented. Transport ordering and reconnect support do not replace application-level authorization, deduplication, or durable game state.
+The established deployment is <https://bang.dazinho.ru>, with the isolated Bang app/database behind the shared Caddy. See [DEPLOYMENT.md](DEPLOYMENT.md). Migration 3 is append-only; recovery after it requires an image that understands schema 3. Preserve volumes and neighboring services. Backups/restore drills, request rate limiting, abandoned-room expiry, external monitoring and real iOS/Android confirmation remain operational follow-ups.

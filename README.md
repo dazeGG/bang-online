@@ -2,14 +2,16 @@
 
 A private browser-based adaptation of classic BANG! for friends. The first-release target is **4–7 players** on desktop, phone, and tablet browsers.
 
-The current build provides a **private lobby**: create a room, invite friends by link, join by name, toggle readiness, and return to the same seat after a refresh, reconnect, or server restart. Guest seats are owned through a secret seat token; rooms and seats are stored in PostgreSQL through explicit migrations. See [the lobby design](docs/LOBBY.md).
+The local implementation supports a **complete classic match**: private ready lobby, authoritative role/character/card setup, all **80 cards (22 kinds) and 16 characters**, out-of-turn decisions, elimination and victory. PostgreSQL stores exact match snapshots and command receipts atomically; reconnect and restart retain unfinished decisions. The saloon interface displays only each player's authorized hand and role. See [room and game protocol](docs/LOBBY.md) and [rules coverage](docs/CLASSIC_RULES.md).
 
-It does **not** yet start or play a match: there are no cards, roles, turns, or match persistence. PWA installation and a service worker are future options.
+Missing required players are awaited without timers or penalties. The fixed host can explicitly end an active match without a winner. After a finished or aborted match, create a new room. Dodge City, 3/8-player modes, bots, Redis and PWA installation remain outside this release.
+
+**Publication status:** the complete-game build has passed local automated, browser and independent review gates; the public site still runs the earlier lobby release pending deployment. Local verification is not evidence of a deployed gameplay release; see [verification status](docs/SETUP_STATUS.md).
 
 ## Requirements
 
 - Node.js 24 LTS and npm 11.
-- Docker Desktop with the Linux container engine running, or an existing PostgreSQL instance. The lobby requires PostgreSQL.
+- Docker Desktop with the Linux container engine running, or an existing PostgreSQL instance. Rooms and games require PostgreSQL.
 - A modern browser. The initial compatibility target is Chrome/Edge 111+, Firefox 114+, and Safari/iOS 16.4+, subject to real-device verification as features are added.
 
 ## Quick start
@@ -29,6 +31,8 @@ npm run dev
 Copy `.env.example` only for a fresh checkout; preserve an existing `.env` and its local settings. The browser client opens at <http://localhost:5173>; the API listens at <http://localhost:3001>. The client uses Vite's same-origin proxy for API and Socket.IO traffic.
 
 Open the client, create a room, and send the full invitation link (`https://bang.dazinho.ru/r/<CODE>`) to the other players. New codes contain six characters. Existing ten-character codes and `/room/<CODE>` invitations still work. To try several players on one computer, use separate browser profiles or private windows: tabs of one browser profile share the same seat by design.
+
+With 4–7 ready players, the host selects «Начать партию». Choose cards for details and legal targets; response and selection panels appear for the required actor. Mass-attack responses can be prepared in parallel, while checks and consequences resolve clockwise. Changed defenses require a new choice; victory is evaluated after the whole mass effect.
 
 The interface follows the approved saloon design: warm paper, walnut, original sunset artwork, and locally hosted Cyrillic fonts. Connection notices appear only when disconnected; readiness is shown per player. See [the design contract](DESIGN.md) and [visual verification](design-qa.md).
 
@@ -51,7 +55,7 @@ Without PostgreSQL the server still starts and liveness works, but room endpoint
 | `npm start`          | Start the built API/server; build first.                                       |
 | `npm run preview`    | Preview the built web client locally; start the API separately.                |
 
-`start` and `preview` are local building blocks. The production Docker image serves the client, API, and Socket.IO from one process behind HTTPS. The lobby is deployed at <https://bang.dazinho.ru>; see [deployment operations](docs/DEPLOYMENT.md).
+`start` and `preview` are local building blocks. The production Docker image serves the client, API, and Socket.IO from one process behind HTTPS. The currently deployed lobby is at <https://bang.dazinho.ru>; complete-game deployment is pending. See [deployment operations](docs/DEPLOYMENT.md).
 
 ## Configuration
 
@@ -73,28 +77,32 @@ Docker Compose uses PostgreSQL 18 with a named data volume. Its development port
 - `GET /api/health` checks process liveness and returns the classic ruleset identifier.
 - `GET /api/ready` checks database connectivity and applied migrations, and returns HTTP 503 when the database is absent, unavailable, or not migrated.
 - `POST /api/rooms`, `POST /api/rooms/:code/seats`, `GET /api/rooms/:code`, and the `lobby:*` Socket.IO events implement the lobby; see [docs/LOBBY.md](docs/LOBBY.md).
+- Protocol 3 adds authenticated `game:start`, `game:command`, `game:sync`, `game:abort` and private per-seat `game:state` delivery. Match revisions differ from lobby revisions.
 
 ## Database and tests
 
 Migrations live in `apps/server/src/migrations.ts` as an append-only list; `npm run db:migrate` applies pending ones atomically under an advisory lock and records them in `schema_migrations`. Never edit an applied migration — add a new one. The server does not migrate automatically on startup.
 
+Migration 3 adds durable matches, restrictive participant references and command receipts. Existing invitations and seat tokens remain valid. After migration 3, older images that only know migrations 1/2 reject the schema: application recovery requires a schema-3-compatible build, with no database downgrade or volume reset.
+
 `npm test` loads `DATABASE_URL` (or `TEST_DATABASE_URL`) from the root `.env`. PostgreSQL integration tests create a random `test_<uuid>` schema, migrate it, and drop it afterwards; they never touch application tables. When the database is unreachable, these tests are **skipped** with a warning locally and **fail** in CI (`CI` set). A green local run without the warning is the only proof that the database paths were exercised.
 
-For a phone on the same LAN, expose the Vite development server with `--host 0.0.0.0`, set `WEB_ORIGIN` to the computer's LAN URL (for example, `http://192.168.1.10:5173`), and allow the chosen web port through the local firewall. Keep PostgreSQL bound to loopback. The browser still reaches the backend through Vite's proxy. Plain LAN HTTP is for local testing; installable PWA capabilities generally require HTTPS or localhost.
+For a phone on the same LAN, expose the Vite development server with `--host 0.0.0.0`, set `WEB_ORIGIN` to the computer's LAN URL, and allow the chosen web port through the local firewall. Keep PostgreSQL bound to loopback. Use trusted HTTPS for playable device tests: the cross-tab command outbox uses Web Locks, available in secure contexts (including localhost). On unsupported or insecure browsers, game mutations are disabled with a visible message. See [client recovery and browser support](apps/web/README.md).
 
 ## Layout
 
 ```text
 apps/
   web/             React/Vite browser client
-  server/          Fastify, Socket.IO, lobby, PostgreSQL store and migrations
+  server/          Fastify, Socket.IO, authenticated room/game stores and migrations
 packages/
   contracts/       Shared public transport types and protocol constants
-  game-core/       Framework-independent classic rules foundation
+  game-core/       Framework-independent complete classic rules and projections
 docs/
   PROJECT_BRIEF.md Agreed scope, architecture, and next milestones
   LOBBY.md         Lobby protocol, seat ownership, and reconnect behavior
-  START_PROMPT.md  Russian handoff prompt for the next chat
+  CLASSIC_RULES.md Pinned sources, physical catalog, card/character/FAQ coverage
+  START_PROMPT.md  Handoff prompt for the next chat
 ```
 
-Start with [the project brief](docs/PROJECT_BRIEF.md) and follow [the project instructions](AGENTS.md). See [verification status](docs/SETUP_STATUS.md) for completed checks and remaining gaps. The next implementation milestone is the first playable turn.
+Start with [the project brief](docs/PROJECT_BRIEF.md) and follow [the project instructions](AGENTS.md). See [verification status](docs/SETUP_STATUS.md) for completed checks and remaining publication/device gaps.
