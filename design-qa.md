@@ -12,7 +12,9 @@ The details dialog remains native `:modal`, fits the 360px viewport (horizontal 
 
 Host-abort confirmation was verified in a separate four-seat ready/start scenario. Guests had no abort button. The dialog focused the safe «Закрыть» control; cancellation retained turn 1/draw and the host's five cards. Confirming after reopening produced an aborted revision-2 result in both profiles, with no winner or pending choice. Guest refresh preserved that result with no actions/abort control, and the no-winner phrase appeared once after the presentation cleanup. Test-only peers disconnected gracefully; retained participants were not removed.
 
-Local game UI verification is complete within these two-browser/two-protocol-peer and emulated-viewport limits. Complete-game publication still needs its separate receipt. The historical captures/results below verify the earlier home/lobby redesign only. Real iOS/Android tests remain unperformed.
+Public gameplay verification also passed on <https://bang.dazinho.ru> for deployed source `276ebba` / image `bang:20261117182607-276ebba` and bundle `/assets/index-DyNS319h.js`. Two independent profiles and two test-only protocol peers readied and started a controlled match. Native card details opened with safe «Закрыть» focus and played Bang; pending-defense refresh restored the identical authorized hand/life/prompt. Explicit disconnect showed indefinite waiting, and return preserved the decision without penalty. The guest declined, then the host confirmed abort; the revision-5 no-winner terminal state survived guest reload with no commands or abort control. At 360 CSS pixels, client/scroll widths both measured 345px. No new console errors appeared during the public flow in Chromium 152/Electron 44 on Windows. This was a public play/response/recovery/abort smoke, not a complete public normal-victory game or a physical phone/tablet test. See [SETUP_STATUS.md](docs/SETUP_STATUS.md).
+
+Local game UI verification is complete within the stated two-browser/two-protocol-peer and emulated-viewport limits. The historical captures/results below verify the earlier home/lobby redesign only. Real iOS/Android tests remain unperformed.
 
 ## Earlier home/lobby visual verification
 
@@ -55,4 +57,4 @@ The implementation preserves the selected paper/wood/oxblood direction, original
 
 P3: the freely licensed slab typeface, clean badge borders, and button trim approximate the generated reference's custom distressed lettering and metalwork. The recreated illustration differs in small scene details. These do not affect hierarchy or behavior. Real iOS Safari/Android testing remains future work. The new game table's separate verification status appears at the top of this document.
 
-Earlier home/lobby visual result: passed. Complete-game local match/layout/dialog/abort verification: passed as described above. Production verification remains pending.
+Earlier home/lobby visual result: passed. Complete-game local match/layout/dialog/abort verification and the public play/response/recovery/abort smoke: passed within the limits described above.
