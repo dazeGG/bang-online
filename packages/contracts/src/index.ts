@@ -1,6 +1,6 @@
 import { CLASSIC_RULESET_ID } from '@bang/game-core';
 
-export { CLASSIC_PLAYER_LIMITS, CLASSIC_RULESET_ID } from '@bang/game-core';
+export { CLASSIC_PLAYER_LIMITS, CLASSIC_RULESET_ID, canStartClassicMatch } from '@bang/game-core';
 
 export interface HealthResponse {
   status: 'ok';
@@ -9,16 +9,107 @@ export interface HealthResponse {
 }
 
 export interface ServerInfo {
-  protocolVersion: 1;
+  protocolVersion: 2;
   rulesetId: typeof CLASSIC_RULESET_ID;
   minPlayers: number;
   maxPlayers: number;
 }
 
+/** Public invitation code alphabet: no 0/O, 1/I/L to keep codes readable aloud. */
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+export const ROOM_CODE_LENGTH = 10;
+export const ROOM_CODE_PATTERN = /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{10}$/;
+export const DISPLAY_NAME_MAX_LENGTH = 24;
+
+export type LobbyErrorCode =
+  | 'invalid_request'
+  | 'invalid_name'
+  | 'name_taken'
+  | 'room_not_found'
+  | 'room_full'
+  | 'room_closed'
+  | 'invalid_session'
+  | 'not_attached'
+  | 'forbidden'
+  | 'unavailable';
+
+export interface LobbySeatView {
+  /** Public seat identifier. It is not a credential. */
+  seatId: string;
+  seatIndex: number;
+  name: string;
+  ready: boolean;
+  host: boolean;
+  connected: boolean;
+}
+
+/** The lobby view is identical for every seat in the room; it contains no secrets. */
+export interface LobbyView {
+  roomCode: string;
+  rulesetId: typeof CLASSIC_RULESET_ID;
+  status: 'lobby';
+  /** Monotonic room revision. Presence updates may repeat the same revision. */
+  revision: number;
+  minPlayers: number;
+  maxPlayers: number;
+  seats: LobbySeatView[];
+  canStart: boolean;
+}
+
+export interface RoomPreview {
+  roomCode: string;
+  status: 'lobby';
+  seatCount: number;
+  maxPlayers: number;
+  joinable: boolean;
+}
+
+export interface CreateRoomRequest {
+  name: string;
+}
+
+export interface JoinRoomRequest {
+  name: string;
+}
+
+/** Returned once on create/join. `seatToken` is the only proof of seat ownership. */
+export interface SeatCredentials {
+  roomCode: string;
+  seatId: string;
+  seatToken: string;
+}
+
+export interface ErrorResponse {
+  error: LobbyErrorCode;
+}
+
+export interface LobbyAttachRequest {
+  roomCode: string;
+  seatToken: string;
+}
+
+export type LobbyResult =
+  { ok: true; seatId: string; lobby: LobbyView } | { ok: false; error: LobbyErrorCode };
+
+export type LobbyCommandResult = { ok: true } | { ok: false; error: LobbyErrorCode };
+
+export type LobbyClosedReason = 'left' | 'kicked';
+
 export interface ServerToClientEvents {
   'server:info': (info: ServerInfo) => void;
+  'lobby:state': (lobby: LobbyView) => void;
+  /** The attached seat no longer exists; the stored seat token is now useless. */
+  'lobby:closed': (event: { reason: LobbyClosedReason }) => void;
 }
 
 export interface ClientToServerEvents {
   'client:ping': (ack: (result: { serverTime: string }) => void) => void;
+  /** Authenticates a seat token and performs a full lobby resynchronization. */
+  'lobby:attach': (request: LobbyAttachRequest, ack: (result: LobbyResult) => void) => void;
+  'lobby:set-ready': (
+    request: { ready: boolean },
+    ack: (result: LobbyCommandResult) => void,
+  ) => void;
+  'lobby:leave': (ack: (result: LobbyCommandResult) => void) => void;
+  'lobby:kick': (request: { seatId: string }, ack: (result: LobbyCommandResult) => void) => void;
 }

@@ -1,3 +1,5 @@
+import { isAbsolute } from 'node:path';
+
 const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'] as const;
 
 type LogLevel = (typeof LOG_LEVELS)[number];
@@ -8,6 +10,8 @@ export interface ServerConfig {
   webOrigin: string;
   databaseUrl: string | undefined;
   logLevel: LogLevel;
+  /** Built web client to serve from this process (production). Unset in development. */
+  webDistDir: string | undefined;
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -57,11 +61,17 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     throw new Error('LOG_LEVEL must be a supported Pino log level.');
   }
 
+  const webDistDir = env.WEB_DIST_DIR?.trim() || undefined;
+  if (webDistDir !== undefined && !isAbsolute(webDistDir)) {
+    throw new Error('WEB_DIST_DIR must be an absolute path.');
+  }
+
   return {
     host,
     port,
     webOrigin,
     databaseUrl,
     logLevel: rawLogLevel as LogLevel,
+    webDistDir,
   };
 }

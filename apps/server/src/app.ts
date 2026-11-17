@@ -10,32 +10,41 @@ import Fastify from 'fastify';
 import { Server } from 'socket.io';
 import type { ServerConfig } from './config.js';
 import { createDatabase, type Database } from './database.js';
+import { registerLobby, type SocketData } from './lobby.js';
+import { createPostgresLobbyStore, type LobbyStore } from './lobby-store.js';
+import { registerWebClient } from './web-client.js';
 
 interface AppDependencies {
   database?: Database;
+  lobbyStore?: LobbyStore;
 }
 
 export function buildApp(config: ServerConfig, dependencies: AppDependencies = {}) {
   const app = Fastify({ logger: { level: config.logLevel } });
-  const database =
-    dependencies.database ??
-    (config.databaseUrl === undefined
-      ? undefined
-      : createDatabase(config.databaseUrl, () => {
-          app.log.error('Unexpected PostgreSQL pool error.');
-        }));
+  let database = dependencies.database;
+  let lobbyStore = dependencies.lobbyStore;
+  if (database === undefined && config.databaseUrl !== undefined) {
+    const postgres = createDatabase(config.databaseUrl, () => {
+      app.log.error('Unexpected PostgreSQL pool error.');
+    });
+    database = postgres;
+    lobbyStore ??= createPostgresLobbyStore(postgres.pool);
+  }
 
-  const io = new Server<ClientToServerEvents, ServerToClientEvents>(app.server, {
-    serveClient: false,
-    cors: { origin: config.webOrigin },
-    allowRequest(request, callback) {
-      const origin = request.headers.origin;
-      callback(null, origin === undefined || origin === config.webOrigin);
+  const io = new Server<ClientToServerEvents, ServerToClientEvents, object, SocketData>(
+    app.server,
+    {
+      serveClient: false,
+      cors: { origin: config.webOrigin },
+      allowRequest(request, callback) {
+        const origin = request.headers.origin;
+        callback(null, origin === undefined || origin === config.webOrigin);
+      },
     },
-  });
+  );
 
   const serverInfo: ServerInfo = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     rulesetId: CLASSIC_RULESET_ID,
     minPlayers: CLASSIC_PLAYER_LIMITS.min,
     maxPlayers: CLASSIC_PLAYER_LIMITS.max,
@@ -50,6 +59,8 @@ export function buildApp(config: ServerConfig, dependencies: AppDependencies = {
       }
     });
   });
+
+  registerLobby({ app, io, store: lobbyStore, webOrigin: config.webOrigin });
 
   app.get('/api/health', () => {
     return {
@@ -68,7 +79,9 @@ export function buildApp(config: ServerConfig, dependencies: AppDependencies = {
     }
 
     try {
-      await database.check();
+      if ((await database.check()) === 'migrations_pending') {
+        return reply.code(503).send({ status: 'not_ready', database: 'migrations_pending' });
+      }
       return { status: 'ready', database: 'connected' };
     } catch {
       return reply.code(503).send({
@@ -77,6 +90,8 @@ export function buildApp(config: ServerConfig, dependencies: AppDependencies = {
       });
     }
   });
+
+  if (config.webDistDir !== undefined) registerWebClient(app, config.webDistDir);
 
   app.addHook('preClose', async () => {
     // Upgraded sockets must close before Fastify waits for its HTTP server.

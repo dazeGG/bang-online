@@ -9,6 +9,7 @@ describe('server configuration', () => {
       webOrigin: 'http://localhost:5173',
       databaseUrl: undefined,
       logLevel: 'info',
+      webDistDir: undefined,
     });
   });
 
@@ -27,6 +28,10 @@ describe('server configuration', () => {
     expect(() => readConfig({ DATABASE_URL: 'https://user:secret@example.com' })).toThrow(
       'DATABASE_URL must be a PostgreSQL connection URL.',
     );
+  });
+
+  it('requires an absolute WEB_DIST_DIR', () => {
+    expect(() => readConfig({ WEB_DIST_DIR: 'apps/web/dist' })).toThrow('WEB_DIST_DIR');
   });
 
   it('rejects an unsupported log level', () => {

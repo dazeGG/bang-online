@@ -1,17 +1,20 @@
 import { CLASSIC_PLAYER_LIMITS } from '@bang/contracts';
+import { HomePage } from './HomePage.js';
+import { parseRoomPath, usePathname } from './navigation.js';
+import { RoomPage } from './RoomPage.js';
 import { useServerConnection } from './use-server-connection.js';
 
 const statusLabels = {
   connecting: 'Подключаемся к серверу…',
-  connected: 'Соединение с сервером установлено',
-  disconnected: 'Сервер недоступен. Повторяем подключение…',
+  connected: 'На связи',
+  disconnected: 'Нет связи с сервером. Повторяем подключение…',
 };
 
 export function App() {
-  const { status, serverInfo } = useServerConnection();
-  const players = serverInfo
-    ? `${serverInfo.minPlayers}–${serverInfo.maxPlayers}`
-    : `${CLASSIC_PLAYER_LIMITS.min}–${CLASSIC_PLAYER_LIMITS.max}`;
+  const { status, socket } = useServerConnection();
+  const pathname = usePathname();
+  const roomCode = parseRoomPath(pathname);
+  const players = `${CLASSIC_PLAYER_LIMITS.min}–${CLASSIC_PLAYER_LIMITS.max}`;
 
   return (
     <main className="shell">
@@ -19,33 +22,24 @@ export function App() {
         <a className="brand" href="/" aria-label="Bang! — главная">
           Bang!
         </a>
-        <span className="version">Стартовый проект</span>
+        <span className="connection-pill" role="status" aria-live="polite">
+          <span className={`status-mark status-mark--${status}`} aria-hidden="true" />
+          {statusLabels[status]}
+        </span>
       </header>
 
-      <section className="intro" aria-labelledby="intro-title">
-        <p className="eyebrow">Один стол. Вся компания.</p>
-        <h1 id="intro-title">Дикий Запад, где&nbsp;бы вы&nbsp;ни&nbsp;были.</h1>
-        <p className="lead">
-          Классический BANG! для {players} друзей — с компьютера, телефона или планшета.
-        </p>
-        <p className="development-note">
-          Основа проекта готова. Приватные комнаты и игровой стол — следующий этап разработки.
-        </p>
-      </section>
-
-      <section className="connection" aria-labelledby="connection-title">
-        <div className="connection-heading">
-          <h2 id="connection-title">Связь с сервером</h2>
-          <span className={`status-mark status-mark--${status}`} aria-hidden="true" />
-        </div>
-        <p role="status" aria-live="polite">
-          {statusLabels[status]}
-        </p>
-        <p className="connection-hint">
-          Здесь проверяется подключение. Возможность играть появится после реализации комнат и
-          правил.
-        </p>
-      </section>
+      {roomCode !== null ? (
+        <RoomPage key={roomCode} roomCode={roomCode} socket={socket} status={status} />
+      ) : pathname === '/' ? (
+        <HomePage players={players} />
+      ) : (
+        <section className="panel">
+          <h1 className="page-title">Страница не найдена</h1>
+          <p>
+            Проверьте ссылку-приглашение или <a href="/">вернитесь на главную</a>.
+          </p>
+        </section>
+      )}
 
       <footer className="footer">
         <span>Классика · {players} игроков</span>

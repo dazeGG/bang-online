@@ -27,3 +27,11 @@ export function getClassicRoleDistribution(count: number): readonly ClassicRole[
 
   return [...roleDistributions[count]];
 }
+
+/**
+ * A classic match may start only with a supported player count where every seated
+ * player has confirmed readiness. Waiting lobbies may hold fewer players.
+ */
+export function canStartClassicMatch(readiness: readonly boolean[]): boolean {
+  return isClassicPlayerCount(readiness.length) && readiness.every((ready) => ready);
+}

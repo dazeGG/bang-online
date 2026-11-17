@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getClassicRoleDistribution, isClassicPlayerCount } from '../src/index.js';
+import {
+  canStartClassicMatch,
+  getClassicRoleDistribution,
+  isClassicPlayerCount,
+} from '../src/index.js';
 
 describe('classic role composition', () => {
   it.each([
@@ -19,5 +23,19 @@ describe('classic role composition', () => {
   it.each([0, 3, 8, 4.5, NaN, Infinity])('rejects unsupported player count %s', (players) => {
     expect(isClassicPlayerCount(players)).toBe(false);
     expect(() => getClassicRoleDistribution(players)).toThrow(RangeError);
+  });
+});
+
+describe('classic match start condition', () => {
+  it.each([4, 5, 6, 7])('allows %i ready players', (players) => {
+    expect(canStartClassicMatch(Array.from({ length: players }, () => true))).toBe(true);
+  });
+
+  it.each([0, 1, 3, 8])('rejects %i ready players', (players) => {
+    expect(canStartClassicMatch(Array.from({ length: players }, () => true))).toBe(false);
+  });
+
+  it('requires every seated player to be ready', () => {
+    expect(canStartClassicMatch([true, true, true, false])).toBe(false);
   });
 });

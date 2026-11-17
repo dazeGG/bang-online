@@ -48,7 +48,7 @@ describe('HTTP health endpoints', () => {
 
   it('checks the database before reporting readiness and closes it on shutdown', async () => {
     const database = {
-      check: vi.fn().mockResolvedValue(undefined),
+      check: vi.fn().mockResolvedValue('ready'),
       close: vi.fn().mockResolvedValue(undefined),
     };
     const app = createApp(config, { database });
@@ -103,7 +103,7 @@ describe('Socket.IO transport', () => {
     socket.connect();
 
     await expect(info).resolves.toEqual({
-      protocolVersion: 1,
+      protocolVersion: 2,
       rulesetId: CLASSIC_RULESET_ID,
       minPlayers: 4,
       maxPlayers: 7,

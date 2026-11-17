@@ -20,7 +20,9 @@ The initial setup provides:
 - a pure game-core foundation with classic limits and role distributions;
 - lint, typecheck, test, and build commands.
 
-Rooms, seat authentication, reconnect ownership, gameplay, match persistence tables/migrations, a production deployment, and an installable PWA are not implemented by this setup. A successful connection indicator proves connectivity only.
+Milestone 1 (private lobby) adds: PostgreSQL migrations (`rooms`, `seats`, `schema_migrations`), room creation and invitation links, join by name, secret seat tokens stored as SHA-256 digests, readiness, host removal of seats, presence, and refresh/reconnect/restart restoration of the same seat. See [LOBBY.md](LOBBY.md) for the protocol and defined edge cases.
+
+The lobby is deployed at <https://bang.dazinho.ru> on the shared VoiceRoom host with an isolated PostgreSQL container and HTTPS through the existing Caddy. See [DEPLOYMENT.md](DEPLOYMENT.md). Gameplay, match start, match persistence, and an installable PWA are not implemented. A successful connection indicator proves connectivity only.
 
 ## Architecture decisions
 
@@ -44,7 +46,7 @@ The initial foundation is not a complete rules engine. Use the official base rul
 
 ## Session and reconnect requirements
 
-These are future acceptance requirements, not features already provided by the scaffold:
+The lobby milestone satisfies the first two requirements and the full-resynchronization requirement for lobby state. The remaining items are acceptance requirements for gameplay:
 
 - A guest's seat is authenticated by an unguessable secret, never by display name or public room code alone.
 - Refreshing or reconnecting restores only the authenticated player's seat and permitted state.
@@ -56,7 +58,7 @@ These are future acceptance requirements, not features already provided by the s
 
 ## Implementation milestones
 
-1. **Private lobby vertical slice:** create/join by link, names, secure guest-seat ownership, seat limits, readiness, and refresh/reconnect restoration. Persist the data needed for this milestone, with explicit migrations and relevant authorization/reconnect tests. A lobby may accept fewer than four waiting guests, while starting a classic match requires 4–7 ready players.
+1. **Private lobby vertical slice — implemented** (see [LOBBY.md](LOBBY.md)): create/join by link, names, secure guest-seat ownership, seat limits, readiness, and refresh/reconnect restoration. Persist the data needed for this milestone, with explicit migrations and relevant authorization/reconnect tests. A lobby may accept fewer than four waiting guests, while starting a classic match requires 4–7 ready players.
 2. **First playable turn:** authoritative setup, hidden per-player views, draw/play/discard phases, a basic shot/defense interaction, and revisioned idempotent commands. Make a small complete flow before adding all card effects.
 3. **Complete classic game:** all base cards and characters, out-of-turn effects, elimination, victory, and relevant official FAQ cases.
 4. **Reliability and device verification:** persistence/restart recovery, interrupted responses, multiple tabs, network transitions, phone/tablet layouts, and deployment preparation.
