@@ -16,8 +16,8 @@ export function App() {
   return (
     <main className="shell">
       <header className="masthead">
-        <a className="brand" href="/" aria-label="BANG! Online — главная">
-          BANG! <span>ONLINE</span>
+        <a className="brand" href="/" aria-label="Bang! — главная">
+          Bang!
         </a>
         <span className="version">Стартовый проект</span>
       </header>

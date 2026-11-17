@@ -1,4 +1,4 @@
-# BANG! Online
+# Bang!
 
 A private browser-based adaptation of classic BANG! for friends. The first-release target is **4–7 players** on desktop, phone, and tablet browsers.
 
@@ -15,7 +15,7 @@ This repository currently provides a development scaffold: a responsive React cl
 Run these commands in PowerShell:
 
 ```powershell
-Set-Location E:\WORK\pet\bang-online
+Set-Location 'E:\WORK\pet\Bang!'
 npm ci
 Copy-Item .env.example .env
 npm run db:up
