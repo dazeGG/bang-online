@@ -1,0 +1,551 @@
+{
+  "schemaVersion": 1,
+  "retrievedDate": "2026-11-17",
+  "edition": "Classic BANG! Fourth edition; publisher base-game catalog id=1",
+  "sources": [
+    {
+      "url": "https://bang.dvgiochi.com/list_download.php?id=1",
+      "localFile": "classic-official-catalog.html",
+      "sha256": "E9F0E7B28275686921230988AE9411F41C42DFD1BCC6D9D26BD1A7BD89665652"
+    },
+    {
+      "url": "https://www.dvgiochi.com/giochi/bang/download/BANG%21%20Card%20List.pdf",
+      "localFile": "Bang_Card_List_IV.pdf",
+      "sha256": "EDD5215E0F4F939FBD8E564A2D7035EEB52BD6826EECE2E4008466D53DCF8740"
+    },
+    {
+      "url": "https://www.dvgiochi.com/giochi/bang/download/Bang_rules_ENG.pdf",
+      "localFile": "Bang_rules_ENG.pdf",
+      "sha256": "08001B2C4EBB606CB1A0831B85E1A1C1A61E85A3DBD64BC2AE14D1CE8425871D"
+    },
+    {
+      "url": "https://www.dvgiochi.com/giochi/bang/download/Bang!_FAQ_ENG.pdf",
+      "localFile": "Bang_FAQ_ENG.pdf",
+      "sha256": "9D736344FF1C4FB9552D46AE8EBBE26EFCC1C6699308467BE3BFD61E48B5CAD6"
+    }
+  ],
+  "suitIconMapping": {
+    "i_p": "spades",
+    "i_c": "hearts",
+    "i_f": "clubs",
+    "i_q": "diamonds"
+  },
+  "verification": {
+    "totalPlayingCards": 80,
+    "totalCharacters": 16,
+    "suitCounts": {
+      "hearts": 20,
+      "diamonds": 20,
+      "clubs": 20,
+      "spades": 20
+    },
+    "kindCounts": {
+      "barrel": 2,
+      "dynamite": 1,
+      "scope": 1,
+      "mustang": 2,
+      "jail": 3,
+      "remington": 1,
+      "rev_carabine": 1,
+      "schofield": 3,
+      "volcanic": 2,
+      "winchester": 1,
+      "bang": 25,
+      "beer": 6,
+      "cat_balou": 4,
+      "stagecoach": 2,
+      "duel": 3,
+      "general_store": 2,
+      "gatling": 1,
+      "indians": 2,
+      "missed": 12,
+      "panic": 4,
+      "saloon": 1,
+      "wells_fargo": 1
+    }
+  },
+  "cards": [
+    {
+      "kind": "barrel",
+      "suit": "spades",
+      "rank": "Q"
+    },
+    {
+      "kind": "barrel",
+      "suit": "spades",
+      "rank": "K"
+    },
+    {
+      "kind": "dynamite",
+      "suit": "hearts",
+      "rank": "2"
+    },
+    {
+      "kind": "scope",
+      "suit": "spades",
+      "rank": "A"
+    },
+    {
+      "kind": "mustang",
+      "suit": "hearts",
+      "rank": "8"
+    },
+    {
+      "kind": "mustang",
+      "suit": "hearts",
+      "rank": "9"
+    },
+    {
+      "kind": "jail",
+      "suit": "spades",
+      "rank": "J"
+    },
+    {
+      "kind": "jail",
+      "suit": "spades",
+      "rank": "10"
+    },
+    {
+      "kind": "jail",
+      "suit": "hearts",
+      "rank": "4"
+    },
+    {
+      "kind": "remington",
+      "suit": "clubs",
+      "rank": "K"
+    },
+    {
+      "kind": "rev_carabine",
+      "suit": "clubs",
+      "rank": "A"
+    },
+    {
+      "kind": "schofield",
+      "suit": "clubs",
+      "rank": "J"
+    },
+    {
+      "kind": "schofield",
+      "suit": "clubs",
+      "rank": "Q"
+    },
+    {
+      "kind": "schofield",
+      "suit": "spades",
+      "rank": "K"
+    },
+    {
+      "kind": "volcanic",
+      "suit": "spades",
+      "rank": "10"
+    },
+    {
+      "kind": "volcanic",
+      "suit": "clubs",
+      "rank": "10"
+    },
+    {
+      "kind": "winchester",
+      "suit": "spades",
+      "rank": "8"
+    },
+    {
+      "kind": "bang",
+      "suit": "spades",
+      "rank": "A"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "2"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "3"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "4"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "5"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "6"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "7"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "8"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "9"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "10"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "J"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "Q"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "K"
+    },
+    {
+      "kind": "bang",
+      "suit": "diamonds",
+      "rank": "A"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "2"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "3"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "4"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "5"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "6"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "7"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "8"
+    },
+    {
+      "kind": "bang",
+      "suit": "clubs",
+      "rank": "9"
+    },
+    {
+      "kind": "bang",
+      "suit": "hearts",
+      "rank": "Q"
+    },
+    {
+      "kind": "bang",
+      "suit": "hearts",
+      "rank": "K"
+    },
+    {
+      "kind": "bang",
+      "suit": "hearts",
+      "rank": "A"
+    },
+    {
+      "kind": "beer",
+      "suit": "hearts",
+      "rank": "6"
+    },
+    {
+      "kind": "beer",
+      "suit": "hearts",
+      "rank": "7"
+    },
+    {
+      "kind": "beer",
+      "suit": "hearts",
+      "rank": "8"
+    },
+    {
+      "kind": "beer",
+      "suit": "hearts",
+      "rank": "9"
+    },
+    {
+      "kind": "beer",
+      "suit": "hearts",
+      "rank": "10"
+    },
+    {
+      "kind": "beer",
+      "suit": "hearts",
+      "rank": "J"
+    },
+    {
+      "kind": "cat_balou",
+      "suit": "hearts",
+      "rank": "K"
+    },
+    {
+      "kind": "cat_balou",
+      "suit": "diamonds",
+      "rank": "9"
+    },
+    {
+      "kind": "cat_balou",
+      "suit": "diamonds",
+      "rank": "10"
+    },
+    {
+      "kind": "cat_balou",
+      "suit": "diamonds",
+      "rank": "J"
+    },
+    {
+      "kind": "stagecoach",
+      "suit": "spades",
+      "rank": "9"
+    },
+    {
+      "kind": "stagecoach",
+      "suit": "spades",
+      "rank": "9"
+    },
+    {
+      "kind": "duel",
+      "suit": "diamonds",
+      "rank": "Q"
+    },
+    {
+      "kind": "duel",
+      "suit": "spades",
+      "rank": "J"
+    },
+    {
+      "kind": "duel",
+      "suit": "clubs",
+      "rank": "8"
+    },
+    {
+      "kind": "general_store",
+      "suit": "clubs",
+      "rank": "9"
+    },
+    {
+      "kind": "general_store",
+      "suit": "spades",
+      "rank": "Q"
+    },
+    {
+      "kind": "gatling",
+      "suit": "hearts",
+      "rank": "10"
+    },
+    {
+      "kind": "indians",
+      "suit": "diamonds",
+      "rank": "K"
+    },
+    {
+      "kind": "indians",
+      "suit": "diamonds",
+      "rank": "A"
+    },
+    {
+      "kind": "missed",
+      "suit": "clubs",
+      "rank": "10"
+    },
+    {
+      "kind": "missed",
+      "suit": "clubs",
+      "rank": "J"
+    },
+    {
+      "kind": "missed",
+      "suit": "clubs",
+      "rank": "Q"
+    },
+    {
+      "kind": "missed",
+      "suit": "clubs",
+      "rank": "K"
+    },
+    {
+      "kind": "missed",
+      "suit": "clubs",
+      "rank": "A"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "2"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "3"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "4"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "5"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "6"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "7"
+    },
+    {
+      "kind": "missed",
+      "suit": "spades",
+      "rank": "8"
+    },
+    {
+      "kind": "panic",
+      "suit": "hearts",
+      "rank": "J"
+    },
+    {
+      "kind": "panic",
+      "suit": "hearts",
+      "rank": "Q"
+    },
+    {
+      "kind": "panic",
+      "suit": "hearts",
+      "rank": "A"
+    },
+    {
+      "kind": "panic",
+      "suit": "diamonds",
+      "rank": "8"
+    },
+    {
+      "kind": "saloon",
+      "suit": "hearts",
+      "rank": "5"
+    },
+    {
+      "kind": "wells_fargo",
+      "suit": "hearts",
+      "rank": "3"
+    }
+  ],
+  "characters": [
+    {
+      "id": "bart_cassidy",
+      "maxHp": 4,
+      "ability": "Draw per lost HP after surviving; lethal rescue precedes draw."
+    },
+    {
+      "id": "black_jack",
+      "maxHp": 4,
+      "ability": "Reveal second phase-one draw; red suit grants one extra hidden draw."
+    },
+    {
+      "id": "calamity_janet",
+      "maxHp": 4,
+      "ability": "Interchange Bang and Missed; normal played-Bang limit applies."
+    },
+    {
+      "id": "el_gringo",
+      "maxHp": 3,
+      "ability": "After surviving damage from another card player, randomly take their hand card per lost HP."
+    },
+    {
+      "id": "jesse_jones",
+      "maxHp": 4,
+      "ability": "First phase-one draw may randomly take another hand card; second from deck."
+    },
+    {
+      "id": "jourdonnais",
+      "maxHp": 4,
+      "ability": "Innate Barrel check, stacking with actual Barrel."
+    },
+    {
+      "id": "kit_carlson",
+      "maxHp": 4,
+      "ability": "Phase one: inspect three, keep two, return third atop deck."
+    },
+    {
+      "id": "lucky_duke",
+      "maxHp": 4,
+      "ability": "Draw checks reveal two; choose result; discard both."
+    },
+    {
+      "id": "paul_regret",
+      "maxHp": 3,
+      "ability": "Incoming distance +1, stacking with Mustang."
+    },
+    {
+      "id": "pedro_ramirez",
+      "maxHp": 4,
+      "ability": "First phase-one draw may take discard top; second from deck."
+    },
+    {
+      "id": "rose_doolan",
+      "maxHp": 4,
+      "ability": "Outgoing distance -1, stacking with Scope; minimum one."
+    },
+    {
+      "id": "sid_ketchum",
+      "maxHp": 4,
+      "ability": "Discard two hand cards for one HP; repeatable; timing caveat in evidence."
+    },
+    {
+      "id": "slab_the_killer",
+      "maxHp": 4,
+      "ability": "Bang cards require two Missed effects."
+    },
+    {
+      "id": "suzy_lafayette",
+      "maxHp": 4,
+      "ability": "Empty hand triggers draw; timing exceptions in evidence."
+    },
+    {
+      "id": "vulture_sam",
+      "maxHp": 4,
+      "ability": "Take eliminated player's hand and board cards into hand."
+    },
+    {
+      "id": "willy_the_kid",
+      "maxHp": 4,
+      "ability": "Unlimited Bang cards during own turn."
+    }
+  ]
+}
