@@ -1,7 +1,8 @@
 # Production stack on the shared VoiceRoom host. VoiceRoom's Caddy terminates HTTPS and
 # reaches bang-app over the external voiceroom_default network; nothing publishes host ports.
 # Service names are prefixed: every alias on voiceroom_default is visible to other stacks there.
-# A guest on that host: the low CPU weight (Docker default 1024) yields to VoiceRoom when both want the CPU.
+# A guest on that host: the low CPU weight (Docker default 1024) yields to VoiceRoom when both want the CPU,
+# and guests.slice (a unit file on the host) caps all guest stacks there together.
 name: bang
 
 services:
@@ -9,6 +10,7 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     cpu_shares: 256
+    cgroup_parent: guests.slice
     environment:
       POSTGRES_USER: bang
       POSTGRES_DB: bang
@@ -44,6 +46,7 @@ services:
     image: ${BANG_IMAGE:?set BANG_IMAGE}
     restart: unless-stopped
     cpu_shares: 256
+    cgroup_parent: guests.slice
     # Replaces the image check: starting node for each probe costs most of a second of CPU.
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3001/api/ready || exit 1"]
