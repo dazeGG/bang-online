@@ -1,6 +1,6 @@
 # Production deployment
 
-The established deployment is <https://bang.dazinho.ru> on the shared VoiceRoom host (`daze@193.233.91.146`). The complete classic-game build is live: source `276ebba`, image `bang:20261117182607-276ebba`, database migrations 1–3. Subsequent receipt-only documentation commits do not change the deployed application source. See [SETUP_STATUS.md](SETUP_STATUS.md) for exact verified build receipts.
+The established deployment is <https://bang.dazinho.ru> on the shared VoiceRoom host (`daze@193.233.91.146`). The current build is source `1d2aac8` (saloon redesign and eliminated-discard timeout), image `bang:20261122205740-1d2aac8`, database migrations 1–3 (no new migration since `276ebba`). Subsequent receipt-only documentation commits do not change the deployed application source. See [SETUP_STATUS.md](SETUP_STATUS.md) for exact verified build receipts.
 
 ## Layout and limits
 

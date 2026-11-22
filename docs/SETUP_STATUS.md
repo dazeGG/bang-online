@@ -1,5 +1,9 @@
 # Verification status
 
+## Saloon redesign and eliminated-discard timeout — 2026-11-22, deployed
+
+Source `1d2aac8` on branch `feat/saloon-redesign` (not yet merged or pushed) runs on <https://bang.dazinho.ru> as image `bang:20261122205740-1d2aac8`, bundle `/assets/index-BoCLulc_.js`. No migration was added; the database container and volume were reused. Before deployment `npm run check` passed with **378 tests in 19 files on actual PostgreSQL, no skips**, plus lint, types, builds and formatting. A local live pass played two complete four-player matches in one browser seat against three protocol peers on the redesigned table (details in [design-qa.md](../design-qa.md)). After rollout, `/api/ready` returned `ready`/`connected` and the public home page loaded its fonts and artwork without errors. No public match was played after this deployment. CI did not run because the branch is unpushed, and physical devices were not tested.
+
 ## Complete classic implementation — 2026-11-17, published and verified
 
 The local code now implements a full classic match for **4–7 players**, with all 80 physical cards/22 kinds, 16 characters, turn/effect/rescue/elimination/victory logic and authorized private projections. [CLASSIC_RULES.md](CLASSIC_RULES.md) maps the physical inventory and every card/character/FAQ case to actual named tests; Q01 is explicitly outside software enforcement.
