@@ -423,6 +423,31 @@ export function applyIntent(
   }
 }
 
+/** Decision kinds that `overdueIntent` can settle; snapshots keep them at `pending.kind`. */
+export const OVERDUE_DECISION_KINDS = ['elimination_discard'] as const;
+
+/**
+ * The default command the server may submit after an absent owner's grace period.
+ * Only an eliminated player's discard qualifies: it decides card order and nothing else.
+ * Cards go to the discard pile hand first, then equipment, in their current order.
+ */
+export function overdueIntent(
+  state: MatchState,
+): { actorSeatId: string; intent: GameIntent } | null {
+  const pending = state.pending;
+  if (state.status !== 'active' || pending?.kind !== 'elimination_discard') return null;
+  const owner = player(state, pending.ownerSeatId);
+  if (owner.alive) return null;
+  return {
+    actorSeatId: owner.seatId,
+    intent: {
+      type: 'choose',
+      decisionId: pending.id,
+      cardIds: [...owner.hand, ...owner.equipment].map((card) => card.id),
+    },
+  };
+}
+
 export function abortMatch(
   state: MatchState,
   hostActorSeatId: string,

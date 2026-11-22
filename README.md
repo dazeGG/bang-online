@@ -4,7 +4,7 @@ A private browser-based adaptation of classic BANG! for friends. The first-relea
 
 The implementation supports a **complete classic match**: private ready lobby, authoritative role/character/card setup, all **80 cards (22 kinds) and 16 characters**, out-of-turn decisions, elimination and victory. PostgreSQL stores exact match snapshots and command receipts atomically; reconnect and restart retain unfinished decisions. The saloon interface displays only each player's authorized hand and role. See [room and game protocol](docs/LOBBY.md) and [rules coverage](docs/CLASSIC_RULES.md).
 
-Missing required players are awaited without timers or penalties. The fixed host can explicitly end an active match without a winner. After a finished or aborted match, create a new room. Dodge City, 3/8-player modes, bots, Redis and PWA installation remain outside this release.
+Missing required players are awaited without timers or penalties; only an eliminated player's card discard is completed automatically after a minute. The fixed host can explicitly end an active match without a winner. After a finished or aborted match, create a new room. Dodge City, 3/8-player modes, bots, Redis and PWA installation remain outside this release.
 
 **Publication status:** the complete classic-game build is live at <https://bang.dazinho.ru>. Deployed source `276ebba` passed local automated/browser/review gates and GitHub CI; public HTTPS checks verified ready/start, a play/response, refresh/disconnect recovery and host abort. See [verification status](docs/SETUP_STATUS.md) for exact evidence and device limits.
 

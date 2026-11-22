@@ -22,6 +22,8 @@ interface AppDependencies {
   database?: Database;
   lobbyStore?: LobbyStore;
   gameStore?: GameStore;
+  /** Test hook for the overdue-decision poller; production uses the defaults in game.ts. */
+  overdue?: { graceMs: number; pollMs: number };
 }
 
 export function buildApp(config: ServerConfig, dependencies: AppDependencies = {}) {
@@ -72,7 +74,12 @@ export function buildApp(config: ServerConfig, dependencies: AppDependencies = {
     });
   });
 
-  const game = registerGame({ app, io, store: gameStore });
+  const game = registerGame({
+    app,
+    io,
+    store: gameStore,
+    ...(dependencies.overdue === undefined ? {} : { overdue: dependencies.overdue }),
+  });
   registerLobby({ app, io, store: lobbyStore, webOrigin: config.webOrigin, game });
 
   app.get('/api/health', () => {

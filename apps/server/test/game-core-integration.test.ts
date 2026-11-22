@@ -500,6 +500,106 @@ describe.skipIf(!postgresAvailable)('real classic engine with PostgreSQL', () =>
     });
   });
 
+  it('settles an absent eliminated player’s discard only after the durable grace period', async () => {
+    const f = await readyRoom(4);
+    const state = (
+      await f.database.pool.query<{ state: MatchState }>(
+        'SELECT state FROM matches WHERE id = $1',
+        [f.started.matchId],
+      )
+    ).rows[0]!.state;
+    const sheriffIndex = state.players.findIndex((entry) => entry.role === 'sheriff');
+    const victimIndex = state.players.findIndex((entry) => entry.role === 'outlaw');
+    const sheriff = state.players[sheriffIndex]!;
+    const victim = state.players[victimIndex]!;
+    // Inherited cards would skip the decision; keep the fixture free of Vulture Sam.
+    for (const entry of state.players)
+      if (entry.characterId === 'vulture_sam') entry.characterId = 'willy_the_kid';
+    state.deck.push(...victim.hand, ...victim.equipment);
+    victim.hand = [];
+    victim.equipment = [];
+    victim.hp = 1;
+    moveFixtureCard(state, victimIndex, 'hand', 'stagecoach');
+    moveFixtureCard(state, victimIndex, 'hand', 'wells_fargo');
+    moveFixtureCard(state, victimIndex, 'equipment', 'scope');
+    const bang = moveFixtureCard(state, sheriffIndex, 'hand', 'bang');
+    moveFixtureCard(state, sheriffIndex, 'equipment', 'winchester');
+    state.turn.seatId = sheriff.seatId;
+    state.turn.phase = 'play';
+    state.turn.bangsPlayed = 0;
+    state.pending = { id: `${state.matchId}:fixture`, kind: 'turn', ownerSeatId: sheriff.seatId };
+    state.tasks = [];
+    classic.decodeMatch(state);
+    await f.database.pool.query('UPDATE matches SET state = $2::jsonb WHERE id = $1', [
+      state.matchId,
+      JSON.stringify(state),
+    ]);
+    const session = (seatId: string) => f.sessions.find((entry) => entry.seatId === seatId)!;
+    let revision = 1;
+    const send = async (seatId: string, intent: classic.GameIntent) => {
+      const result = await f.store.command(session(seatId), {
+        commandId: `fixture-${revision}`,
+        expectedRevision: revision,
+        matchId: state.matchId,
+        intent,
+      });
+      if (!result.ok) throw new Error(`Fixture command failed: ${result.error}`);
+      revision = result.revision;
+    };
+    await send(sheriff.seatId, { type: 'play', cardId: bang.id, targetSeatId: victim.seatId });
+    for (;;) {
+      const view = await f.store.sync(session(victim.seatId));
+      if (!view.ok) throw new Error('Missing victim view.');
+      if (view.game.pending?.kind === 'elimination_discard') break;
+      const decline = view.game.actions.find(
+        (action) => action.intent.type === 'respond' && action.intent.method === 'decline',
+      );
+      if (decline === undefined) throw new Error(`Unexpected ${view.game.pending?.kind}`);
+      await send(victim.seatId, decline.intent);
+    }
+
+    // Fresh decision: nothing happens, however often the poller runs.
+    expect(await f.store.resolveOverdue(60_000)).toEqual([]);
+    await f.database.pool.query(
+      "UPDATE matches SET updated_at = now() - interval '61 seconds' WHERE id = $1",
+      [state.matchId],
+    );
+    const roomId = f.sessions[0]!.roomId;
+    expect(await f.store.resolveOverdue(60_000)).toEqual([roomId]);
+    expect(await f.store.resolveOverdue(0)).toEqual([]);
+
+    const settled = classic.decodeMatch(
+      (
+        await f.database.pool.query<{ state: unknown }>('SELECT state FROM matches WHERE id = $1', [
+          state.matchId,
+        ])
+      ).rows[0]!.state,
+    );
+    expect(settled.revision).toBe(revision + 1);
+    expect(settled.pending?.kind).not.toBe('elimination_discard');
+    const out = settled.players[victimIndex]!;
+    expect(out.alive).toBe(false);
+    expect(out.hand).toEqual([]);
+    expect(out.equipment).toEqual([]);
+    // Hand first, equipment last: the equipped Scope is left on top of the discard pile.
+    expect(settled.discard.at(-1)?.kind).toBe('scope');
+    const receipts = await f.database.pool.query<{ command_id: string; actor_seat_id: string }>(
+      "SELECT command_id, actor_seat_id FROM game_command_receipts WHERE command_id LIKE 'overdue:%'",
+    );
+    expect(receipts.rows).toEqual([
+      { command_id: `overdue:${revision}`, actor_seat_id: victim.seatId },
+    ]);
+    // Clients can never claim the reserved receipt namespace.
+    expect(
+      await f.store.command(session(sheriff.seatId), {
+        commandId: `overdue:${settled.revision}`,
+        expectedRevision: settled.revision,
+        matchId: state.matchId,
+        intent: { type: 'end_turn' },
+      }),
+    ).toEqual({ ok: false, error: 'invalid_request' });
+  });
+
   it('persists Sid interruption without replacing another actor decision and deduplicates payment across restart', async () => {
     const f = await readyRoom(4);
     const state = (

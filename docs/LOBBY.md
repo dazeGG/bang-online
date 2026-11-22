@@ -54,7 +54,7 @@ Clients reject lower match revisions. Equal-revision presence uses monotonically
 
 ## Waiting, interrupts and mass responses
 
-Presence is live socket state, not durable connectivity flags: a seat remains connected while at least one authenticated tab exists. Missing **current required** actors are awaited indefinitely without damage, decline, skipping or timers. Missing unrelated/future responders do not stop earlier choices. Reconnect/restart restores exact pending state and derives waiting from new socket presence.
+Presence is live socket state, not durable connectivity flags: a seat remains connected while at least one authenticated tab exists. Missing **current required** actors are awaited indefinitely without damage, decline, skipping or timers; only an eliminated player's order-only discard is settled by the server after 60 seconds (see [CLASSIC_RULES.md](CLASSIC_RULES.md)). Missing unrelated/future responders do not stop earlier choices. Reconnect/restart restores exact pending state and derives waiting from new socket presence.
 
 Sid's optional healing can interrupt another player's pending decision while preserving its ID, owner, remaining requirements and continuation. It does not create a mandatory Sid prompt.
 

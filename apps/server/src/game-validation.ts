@@ -9,6 +9,10 @@ import { isPlainObject } from './lobby-validation.js';
 
 const id = (value: unknown): value is string =>
   typeof value === 'string' && value.length >= 1 && value.length <= 128 && !/\p{Cc}/u.test(value);
+/** Receipts under this prefix belong to server-settled overdue decisions. */
+export const SERVER_COMMAND_PREFIX = 'overdue:';
+const commandId = (value: unknown): value is string =>
+  id(value) && !value.startsWith(SERVER_COMMAND_PREFIX);
 const revision = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 const keys = (value: Record<string, unknown>, required: string[], optional: string[] = []) =>
@@ -113,7 +117,7 @@ export function parseGameIntent(value: unknown): GameIntent | undefined {
 export function parseGameStart(value: unknown): GameStartRequest | undefined {
   return isPlainObject(value) &&
     keys(value, ['commandId', 'expectedRevision']) &&
-    id(value['commandId']) &&
+    commandId(value['commandId']) &&
     revision(value['expectedRevision'])
     ? { commandId: value['commandId'], expectedRevision: value['expectedRevision'] }
     : undefined;
@@ -122,7 +126,7 @@ export function parseGameStart(value: unknown): GameStartRequest | undefined {
 export function parseGameAbort(value: unknown): GameAbortRequest | undefined {
   return isPlainObject(value) &&
     keys(value, ['commandId', 'expectedRevision', 'matchId']) &&
-    id(value['commandId']) &&
+    commandId(value['commandId']) &&
     revision(value['expectedRevision']) &&
     id(value['matchId'])
     ? {

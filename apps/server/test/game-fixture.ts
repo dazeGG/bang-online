@@ -20,6 +20,8 @@ export interface FixtureState {
 }
 
 export const fixtureEngine: GameEngine<FixtureState> = {
+  OVERDUE_DECISION_KINDS: [],
+  overdueIntent: () => null,
   createMatch(input: CreateMatchInput, random: RandomSource): FixtureState {
     return {
       matchId: input.matchId,

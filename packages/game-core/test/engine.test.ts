@@ -6,6 +6,7 @@ import {
   CLASSIC_DECK,
   createMatch,
   decodeMatch,
+  overdueIntent,
   projectMatch,
 } from '../src/index.js';
 import type { CardKind, CharacterId, GameIntent, MatchState } from '../src/index.js';
@@ -733,6 +734,40 @@ describe('character reactions, Sid interrupts and fatal ordering', () => {
     expect(state.discard.at(-1)!.id).toBe(cards.at(-1)!.id);
     expect(state.players[0]!.hand).toHaveLength(3);
     expect(state.players[1]!.alive).toBe(false);
+  });
+  it('offers an overdue default only for an eliminated owner’s order-only discard', () => {
+    let state = fresh();
+    state.players[1]!.hp = 1;
+    give(state, 0, 'bang');
+    const cards = give(state, 1, 'beer', 'missed');
+    const [barrel] = equip(state, 1, 'barrel');
+    expect(overdueIntent(state)).toBeNull();
+    state = decline(playCard(state, 0, 'bang', 1));
+    state = decline(state);
+    const overdue = overdueIntent(state)!;
+    expect(overdue).toEqual({
+      actorSeatId: 'p1',
+      intent: {
+        type: 'choose',
+        decisionId: state.pending!.id,
+        cardIds: [...cards.map((card) => card.id), barrel!.id],
+      },
+    });
+    state = step(state, overdue.actorSeatId, overdue.intent);
+    expect(state.discard.at(-1)!.id).toBe(barrel!.id);
+    expect(state.players[0]!.hand).toHaveLength(3);
+    expect(overdueIntent(state)).toBeNull();
+
+    // A living sheriff's penalty discard is never settled on their behalf.
+    const penalty = fresh(5);
+    penalty.pending = {
+      id: `${penalty.matchId}:penalty`,
+      kind: 'elimination_discard',
+      ownerSeatId: 'p0',
+      count: penalty.players[0]!.hand.length,
+      includeEquipment: true,
+    };
+    expect(overdueIntent(penalty)).toBeNull();
   });
   it('no reward for initiating an outlaw fatal lost Duel (F Q23)', () => {
     let state = fresh();

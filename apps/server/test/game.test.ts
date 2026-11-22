@@ -378,6 +378,36 @@ describe.skipIf(!postgresAvailable)(
   },
 );
 
+describe.skipIf(!postgresAvailable)('overdue decision poller', () => {
+  it('passes the grace period to the store and publishes every advanced room', async () => {
+    const database = schema.open();
+    const lobby = createPostgresLobbyStore(database.pool);
+    const store = createPostgresGameStore(database.pool, fixtureEngine);
+    let advanced: string[] = [];
+    const resolveOverdue = vi.fn(async () => advanced.splice(0));
+    const app = buildApp(config, {
+      database,
+      lobbyStore: lobby,
+      gameStore: { ...store, resolveOverdue },
+      overdue: { graceMs: 1234, pollMs: 20 },
+    });
+    apps.push(app);
+    const address = await app.listen({ host: '127.0.0.1', port: 0 });
+    const f = await readyPlayers({ database, gameStore: store, lobby, app, address, int: vi.fn() });
+    const host = f.players[0]!;
+    const initial = nextGame(f.players[1]!.socket);
+    const started = await host.socket
+      .timeout(2000)
+      .emitWithAck('game:start', { commandId: 'start', expectedRevision: f.revision });
+    expect(started.ok).toBe(true);
+    await initial;
+    await vi.waitFor(() => expect(resolveOverdue).toHaveBeenCalledWith(1234));
+    const published = nextGame(f.players[1]!.socket);
+    advanced = [f.roomId];
+    expect((await published).status).toBe('active');
+  });
+});
+
 describe.skipIf(!postgresAvailable)('real mass response transport', () => {
   it('keeps future preparation private and provisional while the current actor is absent, then resumes clockwise after restart', async () => {
     let server = await boot(true);

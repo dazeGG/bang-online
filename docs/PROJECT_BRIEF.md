@@ -36,7 +36,7 @@ A bounded log stores the latest 64 public resolution summaries by revision/ordin
 
 Room lifecycle is `lobby -> active -> finished | aborted`. The host starts only with 4–7 ready seats. Participant seats and host identity are fixed throughout active and terminal states; readiness, join, leave and kick cannot mutate them. Restrictive participant foreign keys also prevent direct seat deletion. Lobby-only host handover remains unchanged before start.
 
-A required absent actor is awaited indefinitely, without damage, automatic decline, turn skipping or deadline. Unrelated absent seats do not block earlier decisions. A seat is present while any authenticated tab remains connected. Presence is derived from live sockets and does not alter the durable game revision.
+A required absent actor is awaited indefinitely, without damage, automatic decline, turn skipping or deadline. The only exception is an eliminated player's order-only discard, settled automatically after 60 seconds without an accepted change (see [CLASSIC_RULES.md](CLASSIC_RULES.md)). Unrelated absent seats do not block earlier decisions. A seat is present while any authenticated tab remains connected. Presence is derived from live sockets and does not alter the durable game revision.
 
 The fixed host, even if eliminated, can explicitly abort an active match without a winner. Abort uses the same command/revision/transaction guarantees and cannot overwrite a committed victory. No disconnect-triggered host takeover or rematch/reset is included.
 

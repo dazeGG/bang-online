@@ -28,14 +28,20 @@ export interface GameTransport {
   publish(roomId: string): Promise<void>;
 }
 
+/** An eliminated player's order-only discard is settled after this grace period. */
+export const OVERDUE_GRACE_MS = 60_000;
+const OVERDUE_POLL_MS = 10_000;
+
 export function registerGame({
   app,
   io,
   store,
+  overdue = { graceMs: OVERDUE_GRACE_MS, pollMs: OVERDUE_POLL_MS },
 }: {
   app: FastifyInstance;
   io: GameServer;
   store: GameStore | undefined;
+  overdue?: { graceMs: number; pollMs: number };
 }): GameTransport {
   function logFailure(operation: string) {
     // Raw errors may carry private JSON or SQL parameters. Never log them.
@@ -83,6 +89,24 @@ export function registerGame({
         }
       }),
     );
+  }
+
+  if (store !== undefined) {
+    // Durable deadline: the match's last accepted change, so restarts never reset or lose it.
+    let running = false;
+    const timer = setInterval(() => {
+      if (running) return;
+      running = true;
+      void store
+        .resolveOverdue(overdue.graceMs)
+        .then((rooms) => Promise.all(rooms.map((roomId) => publish(roomId))))
+        .catch(() => logFailure('resolve-overdue'))
+        .finally(() => {
+          running = false;
+        });
+    }, overdue.pollMs);
+    timer.unref();
+    app.addHook('onClose', async () => clearInterval(timer));
   }
 
   io.on('connection', (socket) => {

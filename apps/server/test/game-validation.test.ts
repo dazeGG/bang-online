@@ -63,6 +63,8 @@ describe('strict gameplay wire validation', () => {
     for (const expectedRevision of [-1, 1.2, Infinity, Number.MAX_SAFE_INTEGER + 1, '1'])
       expect(parseGameStart({ commandId: 'x', expectedRevision })).toBeUndefined();
     expect(parseGameStart({ commandId: 'x'.repeat(129), expectedRevision: 1 })).toBeUndefined();
+    // Server-settled overdue decisions own this receipt namespace.
+    expect(parseGameStart({ commandId: 'overdue:3', expectedRevision: 1 })).toBeUndefined();
     expect(
       parseGameAbort({ commandId: 'x', expectedRevision: 1, matchId: 'm', hostSeatId: 'spoof' }),
     ).toBeUndefined();

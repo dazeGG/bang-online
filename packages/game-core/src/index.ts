@@ -1,7 +1,13 @@
 export const CLASSIC_RULESET_ID = 'classic-v1' as const;
 export * from './api.js';
 export * from './catalog.js';
-export { createMatch, applyIntent, abortMatch } from './engine.js';
+export {
+  createMatch,
+  applyIntent,
+  abortMatch,
+  overdueIntent,
+  OVERDUE_DECISION_KINDS,
+} from './engine.js';
 export { projectMatch } from './projection.js';
 export { decodeMatch } from './invariants.js';
 export type { MatchState, PlayerState } from './model.js';

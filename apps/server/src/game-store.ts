@@ -11,7 +11,12 @@ import type {
 import type { GameCommandResult, GameErrorCode } from '@bang/contracts';
 import type { Pool, PoolClient } from 'pg';
 import type { SeatSession } from './lobby-store.js';
-import { parseGameAbort, parseGameCommand, parseGameStart } from './game-validation.js';
+import {
+  parseGameAbort,
+  parseGameCommand,
+  parseGameStart,
+  SERVER_COMMAND_PREFIX,
+} from './game-validation.js';
 
 export interface EngineSnapshot {
   matchId: string;
@@ -31,6 +36,9 @@ export interface GameEngine<State extends EngineSnapshot> {
   projectMatch(state: State, viewerSeatId: string): CoreGameView;
   decodeMatch(raw: unknown): State;
   abortMatch(state: State, hostActorSeatId: string): TransitionResult<State>;
+  /** Decision kinds the engine can settle for an absent owner, read from `state.pending.kind`. */
+  readonly OVERDUE_DECISION_KINDS: readonly string[];
+  overdueIntent(state: State): { actorSeatId: string; intent: GameIntent } | null;
 }
 
 export type StoredGameResult =
@@ -40,6 +48,11 @@ export interface GameStore {
   command(session: SeatSession, request: unknown): Promise<GameCommandResult>;
   abort(session: SeatSession, request: unknown): Promise<GameCommandResult>;
   sync(session: SeatSession, matchId?: string): Promise<StoredGameResult>;
+  /**
+   * Applies the engine default to decisions left unanswered for `graceMs` since the last
+   * accepted change. Returns the room IDs whose match advanced.
+   */
+  resolveOverdue(graceMs: number): Promise<string[]>;
 }
 
 interface RoomRow {
@@ -167,7 +180,8 @@ export function createPostgresGameStore<State extends EngineSnapshot>(
 
   async function save(
     client: PoolClient,
-    session: SeatSession,
+    roomId: string,
+    actorSeatId: string,
     state: State,
     commandId: string,
     hash: string,
@@ -185,11 +199,11 @@ export function createPostgresGameStore<State extends EngineSnapshot>(
     );
     await client.query(
       'UPDATE rooms SET status = $2, revision = revision + 1, updated_at = now() WHERE id = $1',
-      [session.roomId, state.status],
+      [roomId, state.status],
     );
     await client.query(
       'INSERT INTO game_command_receipts (room_id, actor_seat_id, command_id, match_id, fingerprint, receipt) VALUES ($1, $2, $3, $4, $5, $6::jsonb)',
-      [session.roomId, session.seatId, commandId, state.matchId, hash, JSON.stringify(receipt)],
+      [roomId, actorSeatId, commandId, state.matchId, hash, JSON.stringify(receipt)],
     );
     await options.beforeCommit?.(client);
     return receipt;
@@ -226,7 +240,7 @@ export function createPostgresGameStore<State extends EngineSnapshot>(
       const next = engine.decodeMatch(result.state);
       if (next.matchId !== match.id || next.revision !== state.revision + 1)
         throw new Error('Invalid engine transition envelope.');
-      return save(client, session, next, request.commandId, hash);
+      return save(client, session.roomId, session.seatId, next, request.commandId, hash);
     });
   }
 
@@ -283,10 +297,56 @@ export function createPostgresGameStore<State extends EngineSnapshot>(
             'INSERT INTO match_participants (match_id, room_id, seat_id) VALUES ($1, $2, $3)',
             [matchId, room.id, seat.id],
           );
-        return save(client, session, state, request.commandId, hash);
+        return save(client, session.roomId, session.seatId, state, request.commandId, hash);
       });
     },
     command: (session, request) => mutate('command', session, request),
+    async resolveOverdue(graceMs) {
+      const kinds = engine.OVERDUE_DECISION_KINDS;
+      if (kinds.length === 0) return [];
+      const seconds = graceMs / 1000;
+      const candidates = (
+        await pool.query<{ room_id: string }>(
+          "SELECT room_id FROM matches WHERE status = 'active' AND updated_at <= now() - make_interval(secs => $1) AND state->'pending'->>'kind' = ANY($2::text[]) ORDER BY updated_at LIMIT 20",
+          [seconds, kinds],
+        )
+      ).rows;
+      const advanced: string[] = [];
+      for (const { room_id: roomId } of candidates) {
+        const done = await transaction(pool, async (client) => {
+          const room = (
+            await client.query<RoomRow>(
+              'SELECT id, code, status, revision, host_seat_id FROM rooms WHERE id = $1 FOR UPDATE',
+              [roomId],
+            )
+          ).rows[0];
+          if (room === undefined) return false;
+          const match = (
+            await client.query<MatchRow & { overdue: boolean }>(
+              'SELECT id, revision, status, state, updated_at <= now() - make_interval(secs => $2) AS overdue FROM matches WHERE room_id = $1 FOR UPDATE',
+              [roomId, seconds],
+            )
+          ).rows[0];
+          // A command may have landed between the scan and the lock.
+          if (match === undefined || match.status !== 'active' || !match.overdue) return false;
+          const state = decode(match, room);
+          const overdue = engine.overdueIntent(state);
+          if (overdue === null) return false;
+          const result = engine.applyIntent(state, overdue.actorSeatId, overdue.intent, random);
+          if (!result.ok) throw new Error('The engine rejected its own overdue default.');
+          const next = engine.decodeMatch(result.state);
+          if (next.matchId !== match.id || next.revision !== state.revision + 1)
+            throw new Error('Invalid engine transition envelope.');
+          // One receipt per settled revision; client command IDs never use this prefix.
+          const commandId = `${SERVER_COMMAND_PREFIX}${state.revision}`;
+          const hash = fingerprint('command', { overdue: state.revision });
+          await save(client, room.id, overdue.actorSeatId, next, commandId, hash);
+          return true;
+        });
+        if (done) advanced.push(roomId);
+      }
+      return advanced;
+    },
     abort: (session, request) => mutate('abort', session, request),
     async sync(session, matchId) {
       return transaction(pool, async (client) => {
