@@ -1,5 +1,13 @@
 # Saloon design verification
 
+## Full-screen redesign — fixture captures (2026-11-22)
+
+Source: the user's Claude Design "Bang Redesign" board (screens 1a–1m). A temporary, uncommitted fixture page rendered the real components (`GameTable`, `CardActionDetails`, `HomePage`, lobby, terminal result) with fixed public views in exact-size iframes, captured with headless Chrome on Windows. Compared sizes: table 1440×900 (turn, Store, night waiting), 1180×820 (defense), 844×390 (turn, night defense), 667×375 (five players, waiting); dialog 1440×900 and night 844×390; home 1280×800 and 390×844; lobby 1280×800 and night 390×844; result 1280×800 and 844×390. Seats, center prompt, hand fan, action column, log panel/drawer, attacker line, theme switch and the split/stacked saloon layouts match the board. Compact-height adjustments (shortened weapon chips, hidden prompt eyebrow) were made after the captures showed seats touching the prompt.
+
+Automated evidence: 76 web tests, including `table-model.test.ts` (clockwise order, core-matching distance with Mustang/Scope/Paul/Rose and eliminated seats, seat bounds at the board sizes, upright-phone detection, prompt/ribbon/primary-action rules, outcome-implied result roles without leaking living hidden roles). Not verified at capture time: a live match, real-browser interaction and physical devices.
+
+Live local pass (same day): Vite dev client and the real server on local PostgreSQL; one browser seat (Chromium 152/Electron 44, 1280×800) against three test-only protocol peers. Two complete four-player matches finished (renegade victory after 12 turns, then a second match) through the redesigned table only: ready/start, «Индейцы!» response, Bang defense, Volcanic from card details, Duel through the target grid against the sheriff (life 5→4), turn discard and ordered elimination discard through the selection dialog, rescue decline, and the result screen with winner first and only public or outcome-implied roles. No console errors or failed requests appeared. The server's 60-second auto-discard for an absent eliminated player was not reached live; PostgreSQL integration and socket tests cover it. `npm run check`: 378 tests, no PostgreSQL skips. Keyboard-only play and physical devices remain unverified.
+
 ## Complete-game UI — local browser and automated verification
 
 The game table extends the approved paper/wood/oxblood interface with private hand/role, clockwise public boards, card/character detail dialogs, server-derived decisions, mass-response preparation, durable request feedback, waiting and terminal/host-abort flows. It does not replace the selected home/lobby design or add new artwork.

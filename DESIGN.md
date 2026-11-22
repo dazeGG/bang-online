@@ -2,7 +2,7 @@
 
 ## Source of truth
 
-Status: Active. Date: 2026-11-17. Surfaces: home, invitation join, private lobby, private game table, decisions, terminal results and exceptional connection/error states. The user selected the saloon direction and then approved a quieter revision; [the visual reference](docs/design/saloon-reference.png) remains authoritative for home/lobby style. The game table extends its palette and components. Verification evidence lives in [design-qa.md](design-qa.md).
+Status: Active. Date: 2026-11-22. Surfaces: home, invitation join, private lobby, private game table, decisions, terminal results and exceptional connection/error states. The user-approved full-screen redesign (Claude Design "Bang Redesign", screens 1a–1m) is authoritative for every surface: the table fits one landscape screen without page scrolling, and the saloon screens split into an illustrated hero beside a paper panel. The earlier [saloon reference](docs/design/saloon-reference.png) remains the source of the palette and artwork. Verification evidence lives in [design-qa.md](design-qa.md).
 
 ## Brand
 
@@ -29,13 +29,13 @@ One dominant action per flow. Keep player readiness next to each name; omit aggr
 
 ## Visual language
 
-CSS tokens live in `apps/web/src/styles.css`. Display text uses self-hosted Roboto Slab; controls use self-hosted Golos Text, with Latin/Cyrillic subsets and bundled licenses. Main colors: dark ink `#3d1b0c`, ivory paper `#f6e4c7`, walnut `#3d1e12`, oxblood `#9a2e21`, muted sage readiness. Use generous spacing, thin rules, and restrained relief. Raster artwork/textures are original generated assets under `apps/web/public/art`, with prompts/provenance next to them. Standard icons come from Bootstrap Icons with its bundled MIT license.
+CSS tokens live on `:root` in `apps/web/src/styles.css`; a per-viewer day/night switch sets `data-theme="dark"` and overrides the same tokens (paper, ink, muted, line, accent, table, seal, link, chips, fields). The choice is stored in localStorage only as a convenience and defaults to day. Display text uses self-hosted Roboto Slab; controls use self-hosted Golos Text, with Latin/Cyrillic subsets and bundled licenses. Main colors: dark ink `#3d1b0c`, ivory paper `#f6e4c7`, walnut `#3d1e12`, oxblood `#9a2e21`, brass `#e6b86d`, muted sage readiness; night uses paper `#2e1a11` and ink `#f3dfbd`. Raster artwork/textures are original generated assets under `apps/web/public/art`, with prompts/provenance next to them. Standard icons come from Bootstrap Icons with its bundled MIT license.
 
 ## Components
 
 Reuse `NameField`, native forms, shared buttons, the grouped seat roster, and the invitation control. An initial badge, name, ownership/offline metadata, and explicit ready/not-ready text describe each occupied seat. Do not add empty-seat cards or repeated status captions.
 
-The game uses public player boards in clockwise order, visible life/equipment/hand counts, a private own-role strip and hand, draw/discard piles and one decision panel. Server-derived choices drive targets, defenses, checks, ordered/multiple selections and abilities. Card details are informational before a play is committed; text cards are sufficient and do not require new artwork.
+The game is a full-screen oval table. Opponents sit clockwise from the viewer's left, over the top, to the right; each seat shows a ribbon (Ходит / Отвечает / Стреляет в вас / Выбыл), a distance badge that is filled when the seat is within the viewer's weapon reach, life tokens, hand count, equipment chips and presence/jail/role status. The center holds the deck, a prompt (whose decision it is, what is required, last public event, opened Store/check cards) and the discard. The bottom row holds the viewer's plaque (role button, character, goal, life, reach, equipment), a fanned hand where playable cards lift and glow, and an action column with one dominant action. A dashed line connects an attacker to the viewer during a defense. The event log is a side panel on wide screens and a drawer elsewhere; the header menu holds «Обновить стол» and the host's «Завершить без победителя». Distances and reach are display-only; server-derived actions still decide every legal target. Card details are informational before a play is committed; text cards are sufficient and do not require new artwork.
 
 Prepared mass responses are visibly separate from submitted actions. A draft consumes nothing, may be changed before the canonical turn, and is cleared if defense availability changes. An uncertain submitted command stays visible until its exact ID is acknowledged. Never optimistically remove a card or change health.
 
@@ -47,9 +47,9 @@ Target WCAG 2.2 AA. Keep visible labels, native required/max-length constraints,
 
 ## Responsive behavior
 
-A centered paper sheet grows up to 54rem. Below 40rem, reduce gutters, wrap the invitation toolbar, stack lobby actions, and keep readable form text. At narrow widths the secondary join input/button may stack. Reserve image dimensions; do not lock the page to a fixed viewport height or hide vertical overflow.
+Saloon screens fill the viewport: hero and panel sit side by side at 760px+ when wider than tall, otherwise the hero becomes a band above a scrolling panel; heights below 560px use the compact scale. The lantern illustration appears only in a tall split lobby.
 
-The game board and hand use wrapping grids with readable card minimums. Player boards reduce to two columns and then one on very narrow screens; controls retain 48px targets. Dialog height is bounded by `dvh` with normal scrolling. No fixed bottom overlay may obscure hand/actions.
+The table is laid out from the measured viewport (`apps/web/src/game/table-layout.ts`) and container-query units: wide (1200×640+) shows the log beside the table; compact (under 900px wide or 560px tall) moves seats into one top row, shortens weapon names and hides secondary copy; the hand overlaps more as it grows. Phones held upright (narrower than 700px and taller than wide) get a «Поверните телефон» notice instead of an unusable table. Dialogs are bounded by `dvh` with normal scrolling.
 
 ## Interaction states
 
@@ -67,5 +67,7 @@ Keep the established React/Vite and TypeScript workspace; no new runtime depende
 
 ## Open questions
 
+- [x] The upright-phone «Поверните телефон» notice restricts orientation (WCAG 2.2 SC 1.3.4). Product decision (2026-11-22): keep it; the site is landscape-only on phones and no portrait table layout is planned.
+- [x] Live local pass on the redesigned table (2026-11-22): one browser seat against three protocol peers on a real server and PostgreSQL, two complete matches through deal, mass attack, defense, Volcanic, Duel target dialog, discard dialogs, elimination and the result screen. See `design-qa.md`.
 - [ ] Real iOS Safari/Android device confirmation remains a follow-up; responsive browser viewports are not real-device testing.
 - [x] Record local browser review of game table, decisions, dialogs, reconnect, terminal results and abort; see `design-qa.md` for the two-browser/two-protocol-peer and viewport-emulation limits.

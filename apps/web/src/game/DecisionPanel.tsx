@@ -1,7 +1,8 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import type { CardInstance, GameActionOption, GameIntent, GameView } from '@bang/contracts';
-import { cardLabel } from './copy.js';
+import { cardLabel, cards } from './copy.js';
 import { selectedIntent } from './command-state.js';
+import { columnActions, primaryActionId, tablePrompt } from './table-model.js';
 
 export function ActionChoices({
   actions,
@@ -27,7 +28,7 @@ export function ActionChoices({
         ) : (
           <button
             key={action.id}
-            className="button"
+            className="button button--primary"
             type="button"
             disabled={disabled}
             onClick={() => onAction(action.intent)}
@@ -46,10 +47,14 @@ function responseLabel(action: GameActionOption, hand: readonly CardInstance[]) 
     intent.type === 'respond' && intent.method === 'card'
       ? hand.find((candidate) => candidate.id === intent.cardId)
       : undefined;
-  return card ? `${action.label} · ${cardLabel(card)}` : action.label;
+  if (!card) return action.label;
+  // Server labels for defense cards already start with the card name.
+  return action.label.startsWith(cards[card.kind].name)
+    ? `Ответить: ${cardLabel(card)}`
+    : `${action.label} · ${cardLabel(card)}`;
 }
 
-function SelectionAction({
+export function SelectionAction({
   action,
   disabled,
   onAction,
@@ -123,7 +128,7 @@ function SelectionAction({
             </button>
           )}
         </p>
-        <button className="button" type="submit" disabled={disabled || !intent}>
+        <button className="button button--primary" type="submit" disabled={disabled || !intent}>
           Подтвердить выбор
         </button>
       </fieldset>
@@ -131,62 +136,64 @@ function SelectionAction({
   );
 }
 
-const decisions: Record<NonNullable<GameView['pending']>['kind'], string> = {
-  turn: 'Ваш ход',
-  defend: 'Защититесь от выстрела',
-  duel: 'Ответьте на дуэль',
-  mass_response: 'Ваш ответ на массовую атаку',
-  general_store: 'Выберите карту из магазина',
-  kit_carlson: 'Оставьте две карты',
-  lucky_duke: 'Выберите результат проверки',
-  draw_choice: 'Выберите источник добора',
-  target_card: 'Выберите карту',
-  rescue: 'Спаситесь или подтвердите выбывание',
-  elimination_discard: 'Выберите порядок сброса карт',
-  turn_discard: 'Сбросьте лишние карты',
-};
-
+/**
+ * Right-hand action column. Hand cards carry their own play actions; this column holds
+ * every other server-derived choice. Card selections open in a dialog when `onSelect`
+ * is supplied so the table stays visible on small screens.
+ */
 export function DecisionPanel({
   game,
   disabled,
   onAction,
+  onSelect,
+  hint,
+  children,
 }: {
   game: GameView;
   disabled: boolean;
   onAction: (intent: GameIntent) => void;
+  onSelect?: (action: GameActionOption) => void;
+  hint?: string | undefined;
+  children?: ReactNode;
 }) {
-  const pending = game.pending;
-  const actor = game.players.find((player) => player.seatId === pending?.ownerSeatId);
-  const source = game.players.find((player) => player.seatId === pending?.sourceSeatId);
-  const own = pending?.ownerSeatId === game.ownSeatId;
-  const actions = game.actions.filter((action) => action.intent.type !== 'play');
+  const available = columnActions(game);
+  const primary = primaryActionId(available);
+  // The dominant action comes first, as in the design.
+  const actions = [
+    ...available.filter((action) => action.id === primary),
+    ...available.filter((action) => action.id !== primary),
+  ];
+  const prompt = tablePrompt(game);
   return (
-    <section className="decision-panel" aria-labelledby="decision-title">
-      <h2 id="decision-title">
-        {own && pending
-          ? decisions[pending.kind]
-          : actor
-            ? `Ждём: ${actor.name}`
-            : 'Разрешаем эффект'}
+    <section className="action-column" aria-labelledby="decision-title">
+      <h2 id="decision-title" className="visually-hidden">
+        {prompt.title}
       </h2>
-      {pending?.sourceCard && (
-        <p>
-          {cardLabel(pending.sourceCard)}
-          {source ? ` · ${source.name}` : ''}
-        </p>
-      )}
-      {pending?.requiredResponses !== undefined && own && (
-        <p>Осталось эффектов защиты: {pending.requiredResponses}.</p>
-      )}
-      {own && pending?.kind === 'turn' && game.turn.phase === 'play' && (
-        <p>Выберите карту в руке или завершите ход.</p>
-      )}
-      <ActionChoices
-        actions={actions}
-        disabled={disabled}
-        onAction={onAction}
-        hand={game.ownHand}
-      />
+      {hint && <p className="action-hint">{hint}</p>}
+      {children}
+      {actions.map((action) => {
+        const tone = action.id === primary ? 'button--primary' : 'button--secondary';
+        if (action.selection && !onSelect)
+          return (
+            <SelectionAction
+              key={action.id}
+              action={action}
+              disabled={disabled}
+              onAction={onAction}
+            />
+          );
+        return (
+          <button
+            key={action.id}
+            className={`button ${tone}`}
+            type="button"
+            disabled={disabled}
+            onClick={() => (action.selection ? onSelect?.(action) : onAction(action.intent))}
+          >
+            {action.selection ? `${action.label}…` : responseLabel(action, game.ownHand)}
+          </button>
+        );
+      })}
     </section>
   );
 }

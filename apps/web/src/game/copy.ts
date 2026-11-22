@@ -67,6 +67,32 @@ export const cards: Record<CardKind, { name: string; text: string }> = {
   winchester: { name: 'Винчестер', text: 'Дальность оружия 5. Заменяет ранее выложенное оружие.' },
 };
 
+/** Short face copy for the compact card layout; full rules text stays in `cards`. */
+export const cardFaces: Record<CardKind, { tag: string; short: string }> = {
+  bang: { tag: 'Атака', short: 'Выстрел в игрока в зоне досягаемости' },
+  missed: { tag: 'Защита', short: 'Отменяет один выстрел' },
+  beer: { tag: 'Лечение', short: '+1 жизнь себе' },
+  saloon: { tag: 'Лечение всем', short: '+1 жизнь каждому живому' },
+  stagecoach: { tag: 'Добор', short: 'Возьмите 2 карты' },
+  wells_fargo: { tag: 'Добор', short: 'Возьмите 3 карты' },
+  general_store: { tag: 'Добор всем', short: 'Каждый берёт по открытой карте' },
+  duel: { tag: 'Атака', short: 'Сбрасывайте «Бэнг!» по очереди' },
+  gatling: { tag: 'Атака на всех', short: 'Всем: «Мимо!» или −1 жизнь' },
+  indians: { tag: 'Атака на всех', short: 'Всем: «Бэнг!» или −1 жизнь' },
+  panic: { tag: 'Кража', short: 'Заберите карту у игрока на расстоянии 1' },
+  cat_balou: { tag: 'Сброс', short: 'Сбросьте карту любого игрока' },
+  barrel: { tag: 'Снаряжение', short: 'Черва при проверке — выстрел мимо' },
+  dynamite: { tag: 'Снаряжение', short: 'Пики 2–9: −3 жизни' },
+  jail: { tag: 'Снаряжение', short: 'Игрок может пропустить ход' },
+  mustang: { tag: 'Снаряжение', short: 'Вас видят на 1 дальше' },
+  scope: { tag: 'Снаряжение', short: 'Вы видите всех на 1 ближе' },
+  volcanic: { tag: 'Оружие · 1', short: 'Сколько угодно «Бэнг!» за ход' },
+  schofield: { tag: 'Оружие · 2', short: 'Дальность 2' },
+  remington: { tag: 'Оружие · 3', short: 'Дальность 3' },
+  rev_carabine: { tag: 'Оружие · 4', short: 'Дальность 4' },
+  winchester: { tag: 'Оружие · 5', short: 'Дальность 5' },
+};
+
 export const characters: Record<CharacterId, { name: string; text: string }> = {
   bart_cassidy: {
     name: 'Барт Кэссиди',
@@ -159,13 +185,30 @@ export const equipmentKinds = new Set<CardKind>([
   'winchester',
 ]);
 
-export function resolutionText(entry: PublicResolution, game: GameView) {
+export type ResolutionTone = 'play' | 'damage' | 'heal' | 'out' | 'check' | 'info';
+
+/** Structured log row: the card label is rendered separately as a pill. */
+export interface ResolutionParts {
+  actor: string;
+  verb: string;
+  card: string | null;
+  tail: string;
+  tone: ResolutionTone;
+}
+
+export function resolutionParts(entry: PublicResolution, game: GameView): ResolutionParts {
   const name = (id: string) => game.players.find((player) => player.seatId === id)?.name ?? 'Игрок';
   const actor = name(entry.actorSeatId);
-  const face = entry.card ? ` «${cardLabel(entry.card)}»` : '';
+  const card = entry.card ? cardLabel(entry.card) : null;
   switch (entry.kind) {
     case 'played':
-      return `${actor} сыграл${face}${entry.targetSeatId ? ` → ${name(entry.targetSeatId)}` : ''}`;
+      return {
+        actor,
+        verb: 'сыграл',
+        card,
+        tail: entry.targetSeatId ? `→ ${name(entry.targetSeatId)}` : '',
+        tone: 'play',
+      };
     case 'check': {
       const laterCheck = game.publicResolutions.some(
         (candidate) =>
@@ -174,19 +217,44 @@ export function resolutionText(entry: PublicResolution, game: GameView) {
           candidate.revision === entry.revision &&
           candidate.ordinal > entry.ordinal,
       );
-      return `${actor}: ${laterCheck ? 'открыта для проверки' : 'результат проверки'}${face}`;
+      return {
+        actor: `${actor}:`,
+        verb: laterCheck ? 'открыта для проверки' : 'результат проверки',
+        card,
+        tail: '',
+        tone: 'check',
+      };
     }
     case 'black_jack_reveal':
-      return `${actor} показал вторую карту добора${face}`;
+      return { actor, verb: 'показал вторую карту добора', card, tail: '', tone: 'check' };
     case 'damage':
-      return `${actor} потерял жизней: ${entry.amount ?? 1}`;
+      return {
+        actor,
+        verb: `потерял жизней: ${entry.amount ?? 1}`,
+        card: null,
+        tail: '',
+        tone: 'damage',
+      };
     case 'healed':
-      return `${actor} восстановил жизней: ${entry.amount ?? 1}`;
+      return {
+        actor,
+        verb: `восстановил жизней: ${entry.amount ?? 1}`,
+        card: null,
+        tail: '',
+        tone: 'heal',
+      };
     case 'eliminated':
-      return `${actor} выбыл`;
+      return { actor, verb: 'выбыл', card: null, tail: '', tone: 'out' };
     case 'discarded':
-      return `${actor} сбросил${face}`;
+      return { actor, verb: 'сбросил', card, tail: '', tone: 'play' };
     case 'mass_resolved':
-      return 'Массовая атака завершена';
+      return { actor: '', verb: 'Массовая атака завершена', card: null, tail: '', tone: 'info' };
   }
+}
+
+export function resolutionText(entry: PublicResolution, game: GameView) {
+  const parts = resolutionParts(entry, game);
+  return [parts.actor, parts.verb, parts.card ? `«${parts.card}»` : '', parts.tail]
+    .filter(Boolean)
+    .join(' ');
 }

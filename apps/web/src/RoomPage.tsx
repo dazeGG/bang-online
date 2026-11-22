@@ -13,6 +13,7 @@ import {
   type StoredSeat,
 } from './seat-storage.js';
 import type { ConnectionState, GameSocket } from './use-server-connection.js';
+import { SaloonLayout } from './SaloonLayout.js';
 import { GameTable } from './game/GameTable.js';
 import { useGameSession } from './game/use-game-session.js';
 
@@ -119,8 +120,8 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
 
   if (lobby === null) {
     return (
-      <section className="panel" aria-busy="true">
-        <h1 className="page-title">Возвращаемся на ваше место…</h1>
+      <SaloonLayout variant="plain" title="Возвращаемся на ваше место…" busy>
+        <p className="room-line">Комната {roomCode}</p>
         {(notice || gameSession.notice) && (
           <p className="form-error" role="alert">
             {notice ?? gameSession.notice}
@@ -135,7 +136,7 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
             Повторить подключение
           </button>
         )}
-      </section>
+      </SaloonLayout>
     );
   }
 
@@ -156,8 +157,8 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
   }
   if (lobby.status !== 'lobby') {
     return (
-      <section className="panel" aria-busy="true">
-        <h1 className="page-title">Возвращаемся в партию…</h1>
+      <SaloonLayout variant="plain" title="Возвращаемся в партию…" busy>
+        <p className="room-line">Комната {roomCode}</p>
         {(notice || gameSession.notice) && (
           <p className="form-error" role="alert">
             {notice ?? gameSession.notice}
@@ -170,7 +171,7 @@ export function RoomPage({ roomCode, socket, status }: RoomPageProps) {
         >
           Обновить партию
         </button>
-      </section>
+      </SaloonLayout>
     );
   }
 
@@ -233,32 +234,24 @@ function JoinPanel({
   }
 
   if (preview.kind === 'loading') {
-    return (
-      <section className="panel" aria-busy="true">
-        <h1 className="page-title">Ищем комнату…</h1>
-      </section>
-    );
+    return <SaloonLayout variant="join" title="Ищем комнату…" busy />;
   }
 
   if (preview.kind === 'error') {
     return (
-      <section className="panel">
-        <h1 className="page-title">Не удалось открыть комнату</h1>
+      <SaloonLayout variant="join" title="Не удалось открыть комнату">
         <p className="form-error">{errorMessages[preview.error]}</p>
-        <a className="button" href="/">
+        <a className="button button--primary" href="/">
           На главную
         </a>
-      </section>
+      </SaloonLayout>
     );
   }
 
   const { joinable } = preview.preview;
   return (
-    <section className="panel join-panel" aria-labelledby="join-title">
-      <h1 id="join-title" className="page-title">
-        Займите место за столом
-      </h1>
-      <p className="room-code">Комната {roomCode}</p>
+    <SaloonLayout variant="join" title="Займите место за столом">
+      <p className="room-line">Комната {roomCode}</p>
       {notice && (
         <p className="notice" role="status">
           {notice}
@@ -267,7 +260,7 @@ function JoinPanel({
       {joinable ? (
         <form
           className="form"
-          aria-labelledby="join-title"
+          aria-labelledby="page-title"
           onSubmit={handleJoin}
           method="post"
           action={`/api/rooms/${roomCode}/seats`}
@@ -294,7 +287,7 @@ function JoinPanel({
           {errorMessages[preview.preview.status === 'lobby' ? 'room_full' : 'room_closed']}
         </p>
       )}
-    </section>
+    </SaloonLayout>
   );
 }
 
@@ -338,13 +331,8 @@ function LobbyPanel({
   }
 
   return (
-    <section className="lobby" aria-labelledby="lobby-title">
-      <div className="lobby-head">
-        <h1 id="lobby-title" className="page-title">
-          Салун ждёт игроков
-        </h1>
-        <p className="room-code">Комната {lobby.roomCode}</p>
-      </div>
+    <SaloonLayout variant="lobby" title="Салун ждёт игроков" lantern>
+      <p className="room-line room-line--center">Комната {lobby.roomCode}</p>
       {notice && (
         <p className="form-error" role="alert">
           {notice}
@@ -403,11 +391,11 @@ function LobbyPanel({
 
       <InviteLink link={inviteLink} />
 
-      <div className="lobby-actions">
+      <div className={`lobby-actions${amHost ? ' lobby-actions--host' : ''}`}>
         {amHost && (
           <button
             type="button"
-            className="button button--primary"
+            className="button button--primary lobby-start"
             disabled={!lobby.canStart || startDisabled || pending}
             onClick={onStart}
           >
@@ -440,15 +428,7 @@ function LobbyPanel({
           Покинуть комнату
         </button>
       </div>
-      <img
-        className="lobby-decoration"
-        src="/art/hat-lantern.webp"
-        alt=""
-        width="700"
-        height="350"
-        aria-hidden="true"
-      />
-    </section>
+    </SaloonLayout>
   );
 }
 
@@ -474,15 +454,12 @@ function InviteLink({ link }: { link: string }) {
 
   return (
     <div className="invite">
-      <label htmlFor="invite-link" className="hint">
-        Приглашение
-      </label>
+      <label htmlFor="invite-link">Приглашение</label>
       <div className="invite-row">
-        <textarea
+        <input
           id="invite-link"
           name="invitation"
-          rows={1}
-          wrap="soft"
+          type="text"
           readOnly
           className="invite-url"
           value={link}
